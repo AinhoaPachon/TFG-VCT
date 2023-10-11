@@ -1,15 +1,15 @@
-#include "rooms_renderer.h"
+#include "VCT_renderer.h"
 
 #ifdef XR_SUPPORT
 #include "dawnxr/dawnxr_internal.h"
 #endif
 
-RoomsRenderer::RoomsRenderer() : Renderer()
+VCTRenderer::VCTRenderer() : Renderer()
 {
     
 }
 
-int RoomsRenderer::initialize(GLFWwindow* window, bool use_mirror_screen)
+int VCTRenderer::initialize(GLFWwindow* window, bool use_mirror_screen)
 {
     Renderer::initialize(window, use_mirror_screen);
 
@@ -17,7 +17,6 @@ int RoomsRenderer::initialize(GLFWwindow* window, bool use_mirror_screen)
 
     init_render_quad_pipeline();
 
-    raymarching_renderer.initialize(use_mirror_screen);
     mesh_renderer.initialize();
 
 #ifdef XR_SUPPORT
@@ -29,11 +28,10 @@ int RoomsRenderer::initialize(GLFWwindow* window, bool use_mirror_screen)
     return 0;
 }
 
-void RoomsRenderer::clean()
+void VCTRenderer::clean()
 {
     Renderer::clean();
 
-    raymarching_renderer.clean();
     mesh_renderer.clean();
 
     eye_render_texture_uniform[EYE_LEFT].destroy();
@@ -55,13 +53,12 @@ void RoomsRenderer::clean()
 #endif
 }
 
-void RoomsRenderer::update(float delta_time)
+void VCTRenderer::update(float delta_time)
 {
-    raymarching_renderer.update(delta_time);
     mesh_renderer.update(delta_time);
 }
 
-void RoomsRenderer::render()
+void VCTRenderer::render()
 {
     if (!is_openxr_available) {
         render_screen();
@@ -80,7 +77,7 @@ void RoomsRenderer::render()
     clear_renderables();
 }
 
-void RoomsRenderer::render_screen()
+void VCTRenderer::render_screen()
 {
     glm::vec3 eye = glm::vec3(0.0f, 1.25f, 1.25f);
     glm::mat4x4 view = glm::lookAt(eye, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
@@ -89,10 +86,7 @@ void RoomsRenderer::render_screen()
 
     glm::mat4x4 view_projection = projection * view;
 
-    raymarching_renderer.set_left_eye(eye, view_projection);
     mesh_renderer.set_view_projection(view_projection);
-
-    raymarching_renderer.compute_raymarching();
 
     WGPUTextureView swapchain_view = wgpuSwapChainGetCurrentTextureView(webgpu_context.screen_swapchain);
 
@@ -109,15 +103,9 @@ void RoomsRenderer::render_screen()
 
 #if defined(XR_SUPPORT)
 
-void RoomsRenderer::render_xr()
+void VCTRenderer::render_xr()
 {
     xr_context.init_frame();
-
-    raymarching_renderer.set_left_eye(xr_context.per_view_data[EYE_LEFT].position, xr_context.per_view_data[EYE_LEFT].view_projection_matrix);
-    raymarching_renderer.set_right_eye(xr_context.per_view_data[EYE_RIGHT].position, xr_context.per_view_data[EYE_RIGHT].view_projection_matrix);
-    raymarching_renderer.set_near_far(xr_context.z_near, xr_context.z_far);
-
-    raymarching_renderer.compute_raymarching();
 
     for (uint32_t i = 0; i < xr_context.view_count; ++i) {
 
@@ -138,7 +126,7 @@ void RoomsRenderer::render_xr()
 }
 #endif
 
-void RoomsRenderer::render_eye_quad(WGPUTextureView swapchain_view, WGPUTextureView swapchain_depth, WGPUBindGroup bind_group)
+void VCTRenderer::render_eye_quad(WGPUTextureView swapchain_view, WGPUTextureView swapchain_depth, WGPUBindGroup bind_group)
 {
     // Create the command encoder
     WGPUCommandEncoderDescriptor encoder_desc = {};
@@ -203,7 +191,7 @@ void RoomsRenderer::render_eye_quad(WGPUTextureView swapchain_view, WGPUTextureV
 
 #if defined(XR_SUPPORT) && defined(USE_MIRROR_WINDOW)
 
-void RoomsRenderer::render_mirror()
+void VCTRenderer::render_mirror()
 {
     // Get the current texture in the swapchain
     WGPUTextureView current_texture_view = wgpuSwapChainGetCurrentTextureView(webgpu_context.screen_swapchain);
@@ -266,7 +254,7 @@ void RoomsRenderer::render_mirror()
 
 #endif
 
-void RoomsRenderer::init_render_quad_pipeline()
+void VCTRenderer::init_render_quad_pipeline()
 {
     render_quad_shader = RendererStorage::get_shader("data/shaders/quad_eye.wgsl");
 
@@ -296,7 +284,7 @@ void RoomsRenderer::init_render_quad_pipeline()
     render_quad_pipeline.create_render(render_quad_shader, color_target, true);
 }
 
-void RoomsRenderer::init_render_quad_bind_groups()
+void VCTRenderer::init_render_quad_bind_groups()
 {
     for (int i = 0; i < EYE_COUNT; ++i)
     {
@@ -336,7 +324,7 @@ void RoomsRenderer::init_render_quad_bind_groups()
 
 #if defined(XR_SUPPORT) && defined(USE_MIRROR_WINDOW)
 
-void RoomsRenderer::init_mirror_pipeline()
+void VCTRenderer::init_mirror_pipeline()
 {
     mirror_shader = RendererStorage::get_shader("data/shaders/quad_mirror.wgsl");
 
@@ -386,21 +374,19 @@ void RoomsRenderer::init_mirror_pipeline()
 
 #endif
 
-void RoomsRenderer::resize_window(int width, int height)
+void VCTRenderer::resize_window(int width, int height)
 {
     Renderer::resize_window(width, height);
-
-    raymarching_renderer.set_render_size(static_cast<float>(webgpu_context.screen_width), static_cast<float>(webgpu_context.screen_height));
 
     init_render_quad_bind_groups();
 
 #ifndef DISABLE_RAYMARCHER
-    raymarching_renderer.init_compute_raymarching_textures();
+    //raymarching_renderer.init_compute_raymarching_textures();
 #endif
 
 }
 
-Texture* RoomsRenderer::get_eye_texture(eEYE eye)
+Texture* VCTRenderer::get_eye_texture(eEYE eye)
 {
     return &eye_textures[eye];
 }

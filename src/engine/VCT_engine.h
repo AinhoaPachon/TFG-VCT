@@ -1,10 +1,8 @@
 #pragma once
 
 #include "engine.h"
-#include "tools/sculpt/sculpt_editor.h"
-#include "ui/ui_controller.h"
 
-class RoomsEngine : public Engine {
+class VCTEngine : public Engine {
 
     std::vector<Entity*> entities;
 

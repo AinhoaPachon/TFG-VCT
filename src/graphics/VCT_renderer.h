@@ -1,21 +1,19 @@
 #pragma once
 
 #include "includes.h"
+#include <iostream>
 
 #include "graphics/renderer.h"
-#include "graphics/edit.h"
 #include "graphics/texture.h"
 
-#include "raymarching_renderer.h"
 #include "mesh_renderer.h"
 
 #ifdef __EMSCRIPTEN__
 #define DISABLE_RAYMARCHER
 #endif
 
-class RoomsRenderer : public Renderer {
+class VCTRenderer : public Renderer {
 
-    RaymarchingRenderer raymarching_renderer;
     MeshRenderer mesh_renderer;
 
     Mesh  quad_mesh;
@@ -58,7 +56,7 @@ class RoomsRenderer : public Renderer {
 
 public:
 
-    RoomsRenderer();
+    VCTRenderer();
 
     int initialize(GLFWwindow* window, bool use_mirror_screen = false) override;
     void clean() override;
@@ -68,38 +66,6 @@ public:
 
     void resize_window(int width, int height) override;
 
-    void set_sculpt_start_position(const glm::vec3& position) {
-        raymarching_renderer.set_sculpt_start_position(position);
-    }
-
     Texture* get_eye_texture(eEYE eye);
-
-    RaymarchingRenderer* get_raymarching_renderer() { return &raymarching_renderer; }
-
-    /*
-    *   Edits
-    */
-
-    void push_edit(Edit edit) {
-        raymarching_renderer.push_edit(edit);
-    };
-
-    void push_edit_list(std::vector<Edit> &edits) {
-        raymarching_renderer.push_edit_list(edits);
-    };
-
-    void add_preview_edit(const Edit& edit) {
-        raymarching_renderer.add_preview_edit(edit);
-    }
-
-    void push_preview_edit_list(std::vector<Edit>& edits) {
-        for (uint32_t i = 0u; i < edits.size(); i++) {
-            raymarching_renderer.add_preview_edit(edits[i]);
-        }
-    }
-
-    void set_sculpt_rotation(const glm::quat& rotation) {
-        raymarching_renderer.set_sculpt_rotation(rotation);
-    }
 
 };

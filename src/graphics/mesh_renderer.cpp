@@ -1,6 +1,6 @@
 #include "mesh_renderer.h"
 
-#include "rooms_renderer.h"
+#include "VCT_renderer.h"
 
 MeshRenderer::MeshRenderer()
 {
@@ -21,7 +21,7 @@ void MeshRenderer::clean()
 
 void MeshRenderer::set_view_projection(const glm::mat4x4& view_projection)
 {
-    WebGPUContext* webgpu_context = RoomsRenderer::instance->get_webgpu_context();
+    WebGPUContext* webgpu_context = VCTRenderer::instance->get_webgpu_context();
     wgpuQueueWriteBuffer(webgpu_context->device_queue, std::get<WGPUBuffer>(camera_uniform.data), 0, &(view_projection), sizeof(view_projection));
 }
 
@@ -32,7 +32,7 @@ void MeshRenderer::update(float delta_time)
 
 void MeshRenderer::render(WGPUTextureView swapchain_view, WGPUTextureView swapchain_depth)
 {
-    WebGPUContext* webgpu_context = RoomsRenderer::instance->get_webgpu_context();
+    WebGPUContext* webgpu_context = VCTRenderer::instance->get_webgpu_context();
 
     // Create the command encoder
     WGPUCommandEncoderDescriptor encoder_desc = {};
@@ -48,7 +48,7 @@ void MeshRenderer::render(WGPUTextureView swapchain_view, WGPUTextureView swapch
 #endif
     render_pass_color_attachment.storeOp = WGPUStoreOp_Store;
 
-    glm::vec4 clear_color = RoomsRenderer::instance->get_clear_color();
+    glm::vec4 clear_color = VCTRenderer::instance->get_clear_color();
     render_pass_color_attachment.clearValue = WGPUColor(clear_color.r, clear_color.g, clear_color.b, clear_color.a);
 
     // Prepate the depth attachment
@@ -75,7 +75,7 @@ void MeshRenderer::render(WGPUTextureView swapchain_view, WGPUTextureView swapch
     // Create & fill the render pass (encoder)
     WGPURenderPassEncoder render_pass = wgpuCommandEncoderBeginRenderPass(command_encoder, &render_pass_descr);
 
-    RoomsRenderer::instance->render(render_pass, render_bind_group_camera);
+    VCTRenderer::instance->render(render_pass, render_bind_group_camera);
 
     wgpuRenderPassEncoderEnd(render_pass);
 
@@ -95,8 +95,8 @@ void MeshRenderer::render(WGPUTextureView swapchain_view, WGPUTextureView swapch
 
 void MeshRenderer::init_render_mesh_pipelines()
 {
-    WebGPUContext* webgpu_context = RoomsRenderer::instance->get_webgpu_context();
-    bool is_openxr_available = RoomsRenderer::instance->get_openxr_available();
+    WebGPUContext* webgpu_context = VCTRenderer::instance->get_webgpu_context();
+    bool is_openxr_available = VCTRenderer::instance->get_openxr_available();
 
     render_mesh_shader = RendererStorage::get_shader("data/shaders/mesh_color.wgsl");
     Shader* render_mesh_texture_shader = RendererStorage::get_shader("data/shaders/mesh_texture.wgsl");
