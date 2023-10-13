@@ -1,0 +1,427 @@
+{
+    "width": 256,
+    "height": 144,
+    "elements": [
+
+        {
+            "name": "g_main_tools",
+            "type": "group",
+            "nitems": 2
+        },
+        {
+            "name": "sculpt",
+            "type": "button",
+            "texture": "data/textures/cube.png",
+            "unique_selection": true,
+            "selected":   true
+        },
+        {
+            "name": "paint",
+            "type": "button",
+            "texture": "data/textures/paint.png",
+            "unique_selection": true
+        },
+        {
+            "name": "primitives",
+            "type": "button",
+            "texture": "data/textures/primitives.png"
+        },
+        {
+            "name": "colors",
+            "type": "button",
+            "texture": "data/textures/colors.png"
+        },
+        {
+            "name": "mirror",
+            "type": "button",
+            "texture": "data/textures/mirror.png",
+            "allow_toggle": true
+        },
+        {
+            "name": "snap_to_grid",
+            "type": "button",
+            "texture": "data/textures/snap_to_grid.png",
+            "allow_toggle": true
+        },
+        {
+            "name": "primitives",
+            "type": "submenu",
+            "children": [
+                {
+                    "name": "g0_primitives",
+                    "type": "group",
+                    "nitems": 6
+                },
+                {
+                    "name": "sphere",
+                    "type": "button",
+                    "texture": "data/textures/sphere.png",
+                    "unique_selection": true
+                },
+                {
+                    "name": "cube",
+                    "type": "button",
+                    "texture": "data/textures/cube.png",
+                    "unique_selection": true
+                },
+                {
+                    "name": "cone",
+                    "type": "button",
+                    "texture": "data/textures/cone.png",
+                    "unique_selection": true
+                },
+                {
+                    "name": "capsule",
+                    "type": "button",
+                    "texture": "data/textures/capsule.png",
+                    "unique_selection": true
+                },
+                {
+                    "name": "cylinder",
+                    "type": "button",
+                    "texture": "data/textures/cylinder.png",
+                    "unique_selection": true
+                },
+                {
+                    "name": "torus",
+                    "type": "button",
+                    "texture": "data/textures/torus.png",
+                    "unique_selection": true
+                },
+                {
+                    "name": "shape_editor",
+                    "type": "button",
+                    "texture": "data/textures/shape_editor.png"
+                }
+            ]
+        },
+        {
+            "name": "shape_editor",
+            "type": "submenu",
+            "children": [
+                {
+                    "name": "g_shape_editor",
+                    "type": "group",
+                    "nitems": 2
+                },
+                {
+                    "name": "onion",
+                    "type": "button",
+                    "texture": "data/textures/onion.png",
+                    "unique_selection": true,
+                    "allow_toggle": true
+                },
+                {
+                    "name": "capped",
+                    "type": "button",
+                    "texture": "data/textures/capped.png",
+                    "unique_selection": true,
+                    "allow_toggle": true
+                }
+            ]
+        },
+        {
+            "name": "colors",
+            "type": "submenu",
+            "children": [
+                {
+                    "name": "g_colors",
+                    "type": "group",
+                    "nitems": 6
+                },
+                {
+                    "name": "color_template_palette_1",
+                    "type": "button",
+                    "texture": "data/textures/colors_template_1.png"
+                },
+                {
+                    "name": "color_template_palette_2",
+                    "type": "button",
+                    "texture": "data/textures/colors_template_2.png"
+                },
+                {
+                    "name": "color_template_palette_3",
+                    "type": "button",
+                    "texture": "data/textures/colors_template_3.png"
+                },
+                {
+                    "name": "color_template_palette_4",
+                    "type": "button",
+                    "texture": "data/textures/colors_template_4.png"
+                },
+                {
+                    "name": "color_template_palette_5",
+                    "type": "button",
+                    "texture": "data/textures/colors_template_5.png"
+                },
+                {
+                    "name": "color_template_palette_6",
+                    "type": "button",
+                    "texture": "data/textures/colors_template_6.png"
+                },
+                {
+                    "name": "recent_colors",
+                    "type": "button",
+                    "texture": "data/textures/recent_colors.png"
+                }
+            ]
+        },
+        {
+            "name": "color_template_palette_1",
+            "type": "submenu",
+            "children": [
+                {
+                    "name": "g_colors_t1",
+                    "type": "group",
+                    "nitems": 4
+                },
+                {
+                    "name": "colors_t1_1",
+                    "type": "button",
+                    "texture": "data/textures/circle_white.png",
+                    "color": "0.2 0.21 0.77 1"
+                },
+                {
+                    "name": "colors_t1_2",
+                    "type": "button",
+                    "texture": "data/textures/circle_white.png",
+                    "color": "0.41 0.57 0.79 1"
+                },
+                {
+                    "name": "colors_t1_3",
+                    "type": "button",
+                    "texture": "data/textures/circle_white.png",
+                    "color": "0.41 0.76 0.79 1"
+                },
+                {
+                    "name": "colors_t1_4",
+                    "type": "button",
+                    "texture": "data/textures/circle_white.png",
+                    "color": "0.64 0.9 0.93 1"
+                }
+            ]
+        },
+        {
+            "name": "color_template_palette_2",
+            "type": "submenu",
+            "children": [
+                {
+                    "name": "g_colors_t2",
+                    "type": "group",
+                    "nitems": 4
+                },
+                {
+                    "name": "colors_t2_1",
+                    "type": "button",
+                    "texture": "data/textures/circle_white.png",
+                    "color": "0.36 0.61 0.35 1"
+                },
+                {
+                    "name": "colors_t2_2",
+                    "type": "button",
+                    "texture": "data/textures/circle_white.png",
+                    "color": "0.51 0.8 0.49 1"
+                },
+                {
+                    "name": "colors_t2_3",
+                    "type": "button",
+                    "texture": "data/textures/circle_white.png",
+                    "color": "0.68 0.84 0.05 1"
+                },
+                {
+                    "name": "colors_t2_4",
+                    "type": "button",
+                    "texture": "data/textures/circle_white.png",
+                    "color": "0.71 0.96 0.49 1"
+                }
+            ]
+        },
+        {
+            "name": "color_template_palette_3",
+            "type": "submenu",
+            "children": [
+                {
+                    "name": "g_colors_t3",
+                    "type": "group",
+                    "nitems": 4
+                },
+                {
+                    "name": "colors_t3_1",
+                    "type": "button",
+                    "texture": "data/textures/circle_white.png",
+                    "color": "0.94 0.77 0.44 1"
+                },
+                {
+                    "name": "colors_t3_2",
+                    "type": "button",
+                    "texture": "data/textures/circle_white.png",
+                    "color": "0.96 0.67 0.09 1"
+                },
+                {
+                    "name": "colors_t3_3",
+                    "type": "button",
+                    "texture": "data/textures/circle_white.png",
+                    "color": "0.98 0.9 0.08 1"
+                },
+                {
+                    "name": "colors_t3_4",
+                    "type": "button",
+                    "texture": "data/textures/circle_white.png",
+                    "color": "0.94 0.92 0.7 1"
+                }
+            ]
+        },
+        {
+            "name": "color_template_palette_4",
+            "type": "submenu",
+            "children": [
+                {
+                    "name": "g_colors_t4",
+                    "type": "group",
+                    "nitems": 4
+                },
+                {
+                    "name": "colors_t4_1",
+                    "type": "button",
+                    "texture": "data/textures/circle_white.png",
+                    "color": "0.58 0.12 0.12 1"
+                },
+                {
+                    "name": "colors_t4_2",
+                    "type": "button",
+                    "texture": "data/textures/circle_white.png",
+                    "color": "0.83 0.09 0.09 1"
+                },
+                {
+                    "name": "colors_t4_3",
+                    "type": "button",
+                    "texture": "data/textures/circle_white.png",
+                    "color": "0.88 0.42 0.42 1"
+                },
+                {
+                    "name": "colors_t4_4",
+                    "type": "button",
+                    "texture": "data/textures/circle_white.png",
+                    "color": "0.90 0.71 0.71 1"
+                }
+            ]
+        },
+        {
+            "name": "color_template_palette_5",
+            "type": "submenu",
+            "children": [
+                {
+                    "name": "g_colors_t5",
+                    "type": "group",
+                    "nitems": 4
+                },
+                {
+                    "name": "colors_t5_1",
+                    "type": "button",
+                    "texture": "data/textures/circle_white.png",
+                    "color": "0.65 0.02 0.83 1"
+                },
+                {
+                    "name": "colors_t5_2",
+                    "type": "button",
+                    "texture": "data/textures/circle_white.png",
+                    "color": "0.8 0.49 0.89 1"
+                },
+                {
+                    "name": "colors_t5_3",
+                    "type": "button",
+                    "texture": "data/textures/circle_white.png",
+                    "color": "0.95 0.12 0.85 1"
+                },
+                {
+                    "name": "colors_t5_4",
+                    "type": "button",
+                    "texture": "data/textures/circle_white.png",
+                    "color": "0.95 0.62 0.91 1"
+                }
+            ]
+        },
+        {
+            "name": "color_template_palette_6",
+            "type": "submenu",
+            "children": [
+                {
+                    "name": "g_colors_t6",
+                    "type": "group",
+                    "nitems": 4
+                },
+                {
+                    "name": "colors_t6_1",
+                    "type": "button",
+                    "texture": "data/textures/circle_white.png",
+                    "color": "0.0 0.0 0.0 1"
+                },
+                {
+                    "name": "colors_t6_2",
+                    "type": "button",
+                    "texture": "data/textures/circle_white.png",
+                    "color": "0.33 0.33 0.33 1"
+                },
+                {
+                    "name": "colors_t6_3",
+                    "type": "button",
+                    "texture": "data/textures/circle_white.png",
+                    "color": "0.66 0.66 0.66 1"
+                },
+                {
+                    "name": "colors_t6_4",
+                    "type": "button",
+                    "texture": "data/textures/circle_white.png",
+                    "color": "1.0 1.0 1.0 1"
+                }
+            ]
+        },
+        {
+            "name": "recent_colors",
+            "type": "submenu",
+            "children": [
+                {
+                    "name": "g_recent_colors",
+                    "type": "group",
+                    "nitems": 6
+                },
+                {
+                    "name": "recent_color_1",
+                    "type": "button",
+                    "texture": "data/textures/circle_white.png",
+                    "shader": "data/shaders/mesh_texture.wgsl"
+                },
+                {
+                    "name": "recent_color_2",
+                    "type": "button",
+                    "texture": "data/textures/circle_white.png",
+                    "shader": "data/shaders/mesh_texture.wgsl"
+                },
+                {
+                    "name": "recent_color_3",
+                    "type": "button",
+                    "texture": "data/textures/circle_white.png",
+                    "shader": "data/shaders/mesh_texture.wgsl"
+                },
+                {
+                    "name": "recent_color_4",
+                    "type": "button",
+                    "texture": "data/textures/circle_white.png",
+                    "shader": "data/shaders/mesh_texture.wgsl"
+                },
+                {
+                    "name": "recent_color_5",
+                    "type": "button",
+                    "texture": "data/textures/circle_white.png",
+                    "shader": "data/shaders/mesh_texture.wgsl"
+                },
+                {
+                    "name": "recent_color_6",
+                    "type": "button",
+                    "texture": "data/textures/circle_white.png",
+                    "shader": "data/shaders/mesh_texture.wgsl"
+                }
+            ]
+        }
+    ]
+}

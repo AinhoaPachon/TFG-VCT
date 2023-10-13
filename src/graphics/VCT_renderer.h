@@ -8,9 +8,9 @@
 
 #include "mesh_renderer.h"
 
-#ifdef __EMSCRIPTEN__
+//#ifdef __EMSCRIPTEN__
 #define DISABLE_RAYMARCHER
-#endif
+//#endif
 
 class VCTRenderer : public Renderer {
 

@@ -99,7 +99,6 @@ int main() {
         closeWindow(window);
         return 1;
     }
-
     std::cout << "Engine initialized" << std::endl;
 
 #ifdef __EMSCRIPTEN__
