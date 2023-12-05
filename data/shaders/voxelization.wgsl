@@ -1,29 +1,27 @@
 // Aquí tienen RWStructuredBuffer<float4> _VoxelGridPoints;
 // es el outputBuffer, donde meten los puntos del grid
 
-
 struct GridData {
-    _BoundsMin : vec4,
-    _CellHalfSize : float,
-    _GridWidth : int,
-    _GridHeight : int,
-    _GridDepth : int
+    _BoundsMin : vec4f,
+    _CellHalfSize : f32,
+    _GridWidth : u32,
+    _GridHeight : u32,
+    _GridDepth : u32
 }
 
-@group(0) @binding(0) var<storage, read> grid_data: GridData;
-@group(1) @binding(0) var<storage, read_write> _VoxelGridPoints: vec4f;
+@group(0) @binding(0) var<storage, read_write> _VoxelGridPoints: array<vec4f>;
+@group(1) @binding(0) var<uniform> grid_data: GridData;
+
 @compute @workgroup_size(32)
+fn compute(@builtin(global_invocation_id) id: vec3<u32>) {
+    // De momento voy a castear esto a int porq castear 
+    let cellSize : f32 = _CellHalfSize * 2.0;
 
-fn compute(@builtin(global_invocation_id) id: vec3<u32>, in: grid_data) {
-    float cellSize = in._CellHalfSize * 2.0;
-
-    _VoxelGridPoints[id.x + in._GridWidth * (id.y + in._GridHeight * id.z)] = vec4(
-        in._BoundsMin.x + id.x * cellSize,
-        in._BoundsMin.x + id.y * cellSize,
-        in._BoundsMin.x + id.z * cellSize, 1.0);
+    _VoxelGridPoints[u32(id.x + _GridWidth * (id.y + _GridHeight * id.z))] = vec4f(
+        _BoundsMin.x + f32(id.x) * cellSize,
+        _BoundsMin.x + f32(id.y) * cellSize,
+        _BoundsMin.x + f32(id.z) * cellSize, 1.0);
 }
-
-@vertex
 
 struct VertexInput {
     @builtin(vertex_index) v_id: u32,
@@ -37,7 +35,7 @@ struct VertexInput {
 struct VertexOutput {
     @builtin(position) position: vec4f,
     @location(0) color: vec3f,
-    @location(1) size: float
+    @location(1) size: f32
 };
 
 struct RenderMeshData {
@@ -54,17 +52,26 @@ struct CameraData {
 };
 
 @group(1) @binding(0) var<storage, read> mesh_data : InstanceData;
-
 @group(2) @binding(0) var<uniform> camera_data : CameraData;
 
+@vertex
 fn vs_main(in: VertexInput) -> VertexOutput {
     
     let instance_data : RenderMeshData = mesh_data.data[in.instance_id];
     
     var out: VertexOutput;
-    float4 localPos = _VoxelGridPoints[instance_index];
+    var localPos : vec4f = _VoxelGridPoints[instance_index];
     out.position = camera_data.view_projection * instance_data.model * vec4f(in.position, 1.0);
     out.color = in.color;
     out.size = 5;
     return out;
+}
+
+struct FragmentOutput {
+    @location(0) color: vec4f
+}
+
+@fragment
+fn fs_main(in: VertexOutput) -> FragmentOutput {
+    return in.color;
 }
