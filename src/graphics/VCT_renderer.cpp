@@ -193,9 +193,9 @@ void VCTRenderer::render_eye_quad(WGPUTextureView swapchain_view, WGPUTextureVie
 
 void VCTRenderer::render_mirror()
 {
-    // Get the current texture in the swapchain
+   // Get the current texture in the swapchain
     WGPUTextureView current_texture_view = wgpuSwapChainGetCurrentTextureView(webgpu_context.screen_swapchain);
-    assert_msg(current_texture_view != NULL, "Error, dont resize the window please!!");
+    assert(current_texture_view != NULL);
 
     // Create the command encoder
     WGPUCommandEncoderDescriptor encoder_desc = {};
@@ -226,7 +226,7 @@ void VCTRenderer::render_mirror()
             wgpuRenderPassEncoderSetBindGroup(render_pass, 0, swapchain_bind_groups[xr_context.swapchains[0].image_index], 0, nullptr);
 
             // Set vertex buffer while encoding the render pass
-            wgpuRenderPassEncoderSetVertexBuffer(render_pass, 0, quad_mesh.get_vertex_buffer(), 0, quad_mesh.get_byte_size());
+            wgpuRenderPassEncoderSetVertexBuffer(render_pass, 0, quad_surface.get_vertex_buffer(), 0, quad_surface.get_byte_size());
 
             // Submit drawcall
             wgpuRenderPassEncoderDraw(render_pass, 6, 1, 0, 0);
@@ -281,7 +281,8 @@ void VCTRenderer::init_render_quad_pipeline()
     color_target.blend = &blend_state;
     color_target.writeMask = WGPUColorWriteMask_All;
 
-    render_quad_pipeline.create_render(render_quad_shader, color_target, true);
+    PipelineDescription desc = {};
+    render_quad_pipeline.create_render(render_quad_shader, color_target, desc);
 }
 
 void VCTRenderer::init_render_quad_bind_groups()
@@ -353,8 +354,6 @@ void VCTRenderer::init_mirror_pipeline()
 
         swapchain_uni.data = xr_context.swapchains[0].images[i].textureView;
         swapchain_uni.binding = 0;
-        swapchain_uni.visibility = WGPUShaderStage_Fragment;
-
         swapchain_uniforms.push_back(swapchain_uni);
     }
 

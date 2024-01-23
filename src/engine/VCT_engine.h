@@ -5,14 +5,22 @@
 class VCTEngine : public Engine {
 
     std::vector<Entity*> entities;
-	
-	Pipeline		compute_voxelization_pipeline;
-	Shader*			compute_voxelization_shader = nullptr;
-	WGPUBindGroup   compute_voxelization_bindgroup = nullptr;
 
-	Uniform			compute_inputBuffer;
-	Uniform			compute_outputBuffer;
-	Uniform			compute_mapBuffer;
+	// dimensions of the voxel grid: widht, height and depth
+	glm::vec3 dimensions;
+	
+	Pipeline		voxelization_pipeline;
+	Shader*			voxelization_shader = nullptr;
+	WGPUBindGroup   voxelization_bindgroup = nullptr;
+
+	//Uniform			compute_inputBuffer;
+	//Uniform			compute_outputBuffer;
+	//Uniform			compute_mapBuffer;
+
+	Uniform			voxel_voxelGridPointsBuffer;
+	Uniform			voxel_gridDataBuffer;
+	Uniform			voxel_meshDataBuffer;
+	Uniform			voxel_cameraDataBuffer;
 
 public:
 
@@ -26,4 +34,22 @@ public:
 
 	void update(float delta_time) override;
 	void render() override;
+
+private:
+
+	struct gridData {
+		glm::vec4 bounds_min;
+		float cell_half_size;
+		int grid_width;
+		int grid_height;
+		int grid_depth;
+	};
+
+	struct meshData {
+
+	};
+
+	struct cameraData {
+
+	};
 };

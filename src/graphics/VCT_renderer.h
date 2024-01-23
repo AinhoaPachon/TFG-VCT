@@ -14,13 +14,14 @@
 
 class VCTRenderer : public Renderer {
 
-    MeshRenderer mesh_renderer;
+    MeshRenderer    mesh_renderer;
 
-    Mesh  quad_mesh;
+    Mesh            quad_mesh;
+    Surface         quad_surface;
 
     // Render to screen
-    Pipeline render_quad_pipeline = {};
-    Shader*  render_quad_shader = nullptr;
+    Pipeline        render_quad_pipeline = {};
+    Shader*         render_quad_shader = nullptr;
 
     Texture         eye_textures[EYE_COUNT] = {};
     Texture         eye_depth_textures[EYE_COUNT] = {};
