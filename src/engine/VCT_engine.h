@@ -1,13 +1,17 @@
 #pragma once
 
 #include "engine.h"
+#include "graphics/pipeline.h"
+#include <vector>
+
+class Entity;
 
 class VCTEngine : public Engine {
 
     std::vector<Entity*> entities;
 
 	// dimensions of the voxel grid: widht, height and depth
-	glm::vec3 dimensions;
+	uint32_t grid_size;
 	
 	Pipeline		voxelization_pipeline;
 	Shader*			voxelization_shader = nullptr;

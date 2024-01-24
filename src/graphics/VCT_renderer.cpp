@@ -16,7 +16,7 @@ int VCTRenderer::initialize(GLFWwindow* window, bool use_mirror_screen)
     clear_color = glm::vec4(0.22f, 0.22f, 0.22f, 1.0);
 
     init_render_quad_pipeline();
-
+    init_camera_bind_group();
     mesh_renderer.initialize();
 
 #ifdef XR_SUPPORT
@@ -24,6 +24,13 @@ int VCTRenderer::initialize(GLFWwindow* window, bool use_mirror_screen)
         init_mirror_pipeline();
     }
 #endif
+
+    camera = new FlyoverCamera();
+
+    camera->set_perspective(glm::radians(45.0f), webgpu_context.render_width / static_cast<float>(webgpu_context.render_height), z_near, z_far);
+    camera->look_at(glm::vec3(0.0f, 0.1f, 0.4f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    camera->set_mouse_sensitivity(0.004f);
+    camera->set_speed(0.75f);
 
     return 0;
 }
@@ -79,21 +86,79 @@ void VCTRenderer::render()
 
 void VCTRenderer::render_screen()
 {
-    glm::vec3 eye = glm::vec3(0.0f, 1.25f, 1.25f);
-    glm::mat4x4 view = glm::lookAt(eye, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-    glm::mat4x4 projection = glm::perspective(glm::radians(45.0f), webgpu_context.render_width / static_cast<float>(webgpu_context.render_height), 0.1f, 100.0f);
-    //projection[1][1] *= -1.0f;
+    camera_data.eye = camera->get_eye();
+    camera_data.mvp = camera->get_view_projection();
+    camera_data.dummy = 0.f;
 
-    glm::mat4x4 view_projection = projection * view;
-
-    mesh_renderer.set_view_projection(view_projection);
+    wgpuQueueWriteBuffer(webgpu_context.device_queue, std::get<WGPUBuffer>(camera_uniform.data), 0, &(camera_data), sizeof(sCameraData));
 
     WGPUTextureView swapchain_view = wgpuSwapChainGetCurrentTextureView(webgpu_context.screen_swapchain);
 
-    render_eye_quad(swapchain_view, eye_depth_texture_view[EYE_LEFT], eye_render_bind_group[EYE_LEFT]);
+    //ImGui::Render();
 
-    mesh_renderer.render(swapchain_view, eye_depth_texture_view[EYE_LEFT]);
-    
+    {
+        // Create the command encoder
+        WGPUCommandEncoderDescriptor encoder_desc = {};
+        WGPUCommandEncoder command_encoder = wgpuDeviceCreateCommandEncoder(webgpu_context.device, &encoder_desc);
+
+        // Prepare the color attachment
+        WGPURenderPassColorAttachment render_pass_color_attachment = {};
+        render_pass_color_attachment.view = swapchain_view;
+        render_pass_color_attachment.loadOp = WGPULoadOp_Clear;
+        render_pass_color_attachment.storeOp = WGPUStoreOp_Store;
+
+#ifndef __EMSCRIPTEN__
+        render_pass_color_attachment.depthSlice = WGPU_DEPTH_SLICE_UNDEFINED;
+#endif
+
+        glm::vec4 clear_color = VCTRenderer::instance->get_clear_color();
+        render_pass_color_attachment.clearValue = WGPUColor(clear_color.r, clear_color.g, clear_color.b, clear_color.a);
+
+        // Prepate the depth attachment
+        WGPURenderPassDepthStencilAttachment render_pass_depth_attachment = {};
+        render_pass_depth_attachment.view = eye_depth_texture_view[EYE_LEFT];
+        render_pass_depth_attachment.depthClearValue = 1.0f;
+        render_pass_depth_attachment.depthLoadOp = WGPULoadOp_Clear;
+        render_pass_depth_attachment.depthStoreOp = WGPUStoreOp_Store;
+        render_pass_depth_attachment.depthReadOnly = false;
+        render_pass_depth_attachment.stencilClearValue = 0; // Stencil config necesary, even if unused
+        render_pass_depth_attachment.stencilLoadOp = WGPULoadOp_Undefined;
+        render_pass_depth_attachment.stencilStoreOp = WGPUStoreOp_Undefined;
+        render_pass_depth_attachment.stencilReadOnly = true;
+
+        WGPURenderPassDescriptor render_pass_descr = {};
+        render_pass_descr.colorAttachmentCount = 1;
+        render_pass_descr.colorAttachments = &render_pass_color_attachment;
+        render_pass_descr.depthStencilAttachment = &render_pass_depth_attachment;
+
+        // Create & fill the render pass (encoder)
+        WGPURenderPassEncoder render_pass = wgpuCommandEncoderBeginRenderPass(command_encoder, &render_pass_descr);
+
+        mesh_renderer.render_opaque(render_pass);
+
+#ifndef DISABLE_RAYMARCHER
+        raymarching_renderer.set_camera_eye(camera->get_eye());
+        raymarching_renderer.render_raymarching_proxy(render_pass);
+#endif
+
+        mesh_renderer.render_transparent(render_pass);
+
+        wgpuRenderPassEncoderEnd(render_pass);
+
+        wgpuRenderPassEncoderRelease(render_pass);
+
+        WGPUCommandBufferDescriptor cmd_buff_descriptor = {};
+        cmd_buff_descriptor.nextInChain = NULL;
+        cmd_buff_descriptor.label = "Command buffer";
+
+        WGPUCommandBuffer commands = wgpuCommandEncoderFinish(command_encoder, &cmd_buff_descriptor);
+
+        wgpuQueueSubmit(webgpu_context.device_queue, 1, &commands);
+
+        wgpuCommandBufferRelease(commands);
+        wgpuCommandEncoderRelease(command_encoder);
+    }
+
     wgpuTextureViewRelease(swapchain_view);
 
 #ifndef __EMSCRIPTEN__
@@ -113,11 +178,71 @@ void VCTRenderer::render_xr()
 
         const sSwapchainData& swapchainData = xr_context.swapchains[i];
 
-        render_eye_quad(swapchainData.images[swapchainData.image_index].textureView, eye_depth_texture_view[i], eye_render_bind_group[i]);
+        camera_data.eye = xr_context.per_view_data[i].position;
+        camera_data.mvp = xr_context.per_view_data[i].view_projection_matrix;
+        camera_data.dummy = 0.f;
 
-        mesh_renderer.set_view_projection(xr_context.per_view_data[i].view_projection_matrix);
+        wgpuQueueWriteBuffer(webgpu_context.device_queue, std::get<WGPUBuffer>(camera_uniform.data), 0, &camera_data, sizeof(sCameraData));
 
-        mesh_renderer.render(swapchainData.images[swapchainData.image_index].textureView, eye_depth_texture_view[i]);
+        {
+            // Create the command encoder
+            WGPUCommandEncoderDescriptor encoder_desc = {};
+            WGPUCommandEncoder command_encoder = wgpuDeviceCreateCommandEncoder(webgpu_context.device, &encoder_desc);
+
+            // Prepare the color attachment
+            WGPURenderPassColorAttachment render_pass_color_attachment = {};
+            render_pass_color_attachment.view = swapchainData.images[swapchainData.image_index].textureView;
+            render_pass_color_attachment.loadOp = WGPULoadOp_Clear;
+            render_pass_color_attachment.storeOp = WGPUStoreOp_Store;
+
+            glm::vec4 clear_color = VCTRenderer::instance->get_clear_color();
+            render_pass_color_attachment.clearValue = WGPUColor(clear_color.r, clear_color.g, clear_color.b, clear_color.a);
+
+            // Prepate the depth attachment
+            WGPURenderPassDepthStencilAttachment render_pass_depth_attachment = {};
+            render_pass_depth_attachment.view = eye_depth_texture_view[i];
+            render_pass_depth_attachment.depthClearValue = 1.0f;
+            render_pass_depth_attachment.depthLoadOp = WGPULoadOp_Clear;
+            render_pass_depth_attachment.depthStoreOp = WGPUStoreOp_Store;
+            render_pass_depth_attachment.depthReadOnly = false;
+            render_pass_depth_attachment.stencilClearValue = 0; // Stencil config necesary, even if unused
+            render_pass_depth_attachment.stencilLoadOp = WGPULoadOp_Undefined;
+            render_pass_depth_attachment.stencilStoreOp = WGPUStoreOp_Undefined;
+            render_pass_depth_attachment.stencilReadOnly = true;
+
+            WGPURenderPassDescriptor render_pass_descr = {};
+            render_pass_descr.colorAttachmentCount = 1;
+            render_pass_descr.colorAttachments = &render_pass_color_attachment;
+            render_pass_descr.depthStencilAttachment = &render_pass_depth_attachment;
+
+            // Create & fill the render pass (encoder)
+            WGPURenderPassEncoder render_pass = wgpuCommandEncoderBeginRenderPass(command_encoder, &render_pass_descr);
+
+            mesh_renderer.render_opaque(render_pass);
+
+#ifndef DISABLE_RAYMARCHER
+            raymarching_renderer.set_camera_eye(xr_context.per_view_data[i].position);
+            raymarching_renderer.render_raymarching_proxy(render_pass);
+#endif
+
+            mesh_renderer.render_transparent(render_pass);
+
+            wgpuRenderPassEncoderEnd(render_pass);
+
+            wgpuRenderPassEncoderRelease(render_pass);
+
+            WGPUCommandBufferDescriptor cmd_buff_descriptor = {};
+            cmd_buff_descriptor.nextInChain = NULL;
+            cmd_buff_descriptor.label = "Command buffer";
+
+            WGPUCommandBuffer commands = wgpuCommandEncoderFinish(command_encoder, &cmd_buff_descriptor);
+
+            wgpuQueueSubmit(webgpu_context.device_queue, 1, &commands);
+
+            wgpuCommandBufferRelease(commands);
+            wgpuCommandEncoderRelease(command_encoder);
+        }
+
 
         xr_context.release_swapchain(i);
     }
@@ -167,7 +292,7 @@ void VCTRenderer::render_eye_quad(WGPUTextureView swapchain_view, WGPUTextureVie
         wgpuRenderPassEncoderSetBindGroup(render_pass, 0, bind_group, 0, nullptr);
 
         // Set vertex buffer while encoding the render pass
-        wgpuRenderPassEncoderSetVertexBuffer(render_pass, 0, quad_mesh.get_vertex_buffer(), 0, quad_mesh.get_byte_size());
+        wgpuRenderPassEncoderSetVertexBuffer(render_pass, 0, quad_surface.get_vertex_buffer(), 0, quad_surface.get_byte_size());
 
         // Submit drawcall
         wgpuRenderPassEncoderDraw(render_pass, 6, 1, 0, 0);
@@ -260,7 +385,7 @@ void VCTRenderer::init_render_quad_pipeline()
 
     init_render_quad_bind_groups();
 
-    quad_mesh.create_quad();
+    quad_surface.create_quad();
 
     WGPUTextureFormat swapchain_format = is_openxr_available ? webgpu_context.xr_swapchain_format : webgpu_context.swapchain_format;
 
@@ -321,6 +446,13 @@ void VCTRenderer::init_render_quad_bind_groups()
         std::vector<Uniform*> uniforms = { &eye_render_texture_uniform[i] };
         eye_render_bind_group[i] = webgpu_context.create_bind_group(uniforms, render_quad_shader, 0);
     }
+}
+
+void VCTRenderer::init_camera_bind_group()
+{
+    camera_uniform.data = webgpu_context.create_buffer(sizeof(sCameraData), WGPUBufferUsage_CopyDst | WGPUBufferUsage_Uniform, nullptr, "camera_buffer");
+    camera_uniform.binding = 0;
+    camera_uniform.buffer_size = sizeof(sCameraData);
 }
 
 #if defined(XR_SUPPORT) && defined(USE_MIRROR_WINDOW)

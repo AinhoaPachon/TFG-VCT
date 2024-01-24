@@ -12,7 +12,7 @@ struct GridData {
 @group(0) @binding(0) var<storage, read_write> _VoxelGridPoints: array<vec4f>;
 @group(0) @binding(1) var<uniform> grid_data: GridData;
 
-@compute @workgroup_size(32)
+@compute @workgroup_size(8, 8, 8)
 fn compute(@builtin(global_invocation_id) id: vec3<u32>) {
     let cellSize : f32 = grid_data._CellHalfSize * 2.0;
 

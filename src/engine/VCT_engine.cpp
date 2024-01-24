@@ -8,18 +8,14 @@
 #include <iostream>
 #include <fstream>
 
-struct mapAsync {
-	WGPUBuffer mBuffer;
-	uint32_t size;
-	std::vector<float> inputs;
-	bool done;
-};
 
 int VCTEngine::initialize(Renderer* renderer, GLFWwindow* window, bool use_glfw, bool use_mirror_screen)
 {
 	int error = Engine::initialize(renderer, window, use_glfw, use_mirror_screen);
 
-    /*EntityMesh* cube = parse_scene("data/meshes/cube/cube.obj");
+	grid_size = 1024;
+
+    /*EntityMesh* cube = parse_scene("data/meshes/cube/cube.obj", entities);
     cube->scale(glm::vec3(0.25));
     cube->translate(glm::vec3(1.0f, 0.0, 0.0));
     entities.push_back(cube);*/
@@ -50,7 +46,7 @@ void VCTEngine::init_compute_voxelization()
 	init_bindings_voxelization_pipeline();
 
 	// set grid_data uniforms and camera_data uniforms
-    std::vector<Uniform*> uniforms = { &voxel_voxelGridPointsBuffer, &voxel_gridDataBuffer};
+    std::vector<Uniform*> uniforms = { &voxel_voxelGridPointsBuffer, &voxel_gridDataBuffer };
 	voxelization_bindgroup = webgpu_context->create_bind_group(uniforms, voxelization_shader, 0);
 
 	voxelization_pipeline.create_compute(voxelization_shader);
@@ -60,7 +56,7 @@ void VCTEngine::init_bindings_voxelization_pipeline()
 {
 	WebGPUContext* webgpu_context = VCTRenderer::instance->get_webgpu_context();
 
-	uint32_t grid_size = 1000;
+	uint32_t grid_size = 1024;
 	std::vector<glm::vec4> initial_values;
 
 	voxel_voxelGridPointsBuffer.binding = 0;
@@ -70,7 +66,7 @@ void VCTEngine::init_bindings_voxelization_pipeline()
 	gridData* grid = {};
 	grid->bounds_min = glm::vec4(0.0, 0.0, 0.0, 0.0);
 	grid->cell_half_size = 2.0f;
-	grid->grid_width = grid->grid_height = grid->grid_depth = 1000;
+	grid->grid_width = grid->grid_height = grid->grid_depth = grid_size;
 
 	voxel_gridDataBuffer.binding = 1;
 	voxel_gridDataBuffer.buffer_size = sizeof(gridData);
@@ -104,10 +100,9 @@ void VCTEngine::onCompute()
 	*/
 
 	// Ceil invocationCount / workgroupSize
-	uint32_t invocationCount = 32 / sizeof(float);
-	uint32_t workgroupSize = 32;
-	uint32_t workgroupCount = (invocationCount + workgroupSize - 1) / workgroupSize;
-	wgpuComputePassEncoderDispatchWorkgroups(computePass, workgroupCount, 1, 1);
+	uint32_t workgroup_size = 8 * 8 * 8;
+	uint32_t workgroup_count = ceil(grid_size * grid_size * grid_size / workgroup_size);
+	wgpuComputePassEncoderDispatchWorkgroups(computePass, workgroup_count, 1, 1);
 
 	wgpuComputePassEncoderEnd(computePass);
 

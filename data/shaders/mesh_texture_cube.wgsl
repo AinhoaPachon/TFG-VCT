@@ -1,14 +1,15 @@
 #include mesh_includes.wgsl
+#include tonemappers.wgsl
 
 #define GAMMA_CORRECTION
-
 
 @group(0) @binding(0) var<storage, read> mesh_data : InstanceData;
 
 @group(1) @binding(0) var<uniform> camera_data : CameraData;
 
-@group(2) @binding(0) var albedo_texture: texture_2d<f32>;
-@group(2) @binding(7) var texture_sampler : sampler;
+@group(2) @binding(0) var irradiance_texture: texture_cube<f32>;
+@group(2) @binding(7) var sampler_clamp : sampler;
+
 
 @vertex
 fn vs_main(in: VertexInput) -> VertexOutput {
@@ -32,23 +33,18 @@ struct FragmentOutput {
 @fragment
 fn fs_main(in: VertexOutput) -> FragmentOutput {
     
-    var dummy = camera_data.eye;
+    var view = normalize( in.world_position - camera_data.eye );
 
     var out: FragmentOutput;
-    var color : vec4f = textureSample(albedo_texture, texture_sampler, in.uv);
-    color = pow(color, vec4f(2.2));
-
-    if (color.a < 0.9) {
-        discard;
-    }
-
-    var _color = color.rgb;
+    var final_color : vec3f = textureSampleLevel(irradiance_texture, sampler_clamp, view, 0.0).rgb;
+    
+    final_color = tonemap_filmic(final_color, 1.0);
 
     if (GAMMA_CORRECTION == 1) {
-        _color = pow(_color, vec3f(1.0 / 2.2));
+        final_color = pow(final_color, vec3(1.0 / 2.2));
     }
 
-    out.color = vec4f(in.color * _color, color.a);
+    out.color = vec4f(final_color, 1.0);
 
     return out;
 }

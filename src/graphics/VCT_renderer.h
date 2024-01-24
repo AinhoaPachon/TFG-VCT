@@ -5,8 +5,11 @@
 
 #include "graphics/renderer.h"
 #include "graphics/texture.h"
+#include "graphics/surface.h"
 
 #include "mesh_renderer.h"
+
+#include "framework/camera/flyover_camera.h"
 
 //#ifdef __EMSCRIPTEN__
 #define DISABLE_RAYMARCHER
@@ -16,8 +19,14 @@ class VCTRenderer : public Renderer {
 
     MeshRenderer    mesh_renderer;
 
-    Mesh            quad_mesh;
     Surface         quad_surface;
+
+    struct sCameraData {
+        glm::mat4x4 mvp;
+        glm::vec3 eye;
+        float dummy;
+    } camera_data;
+    Uniform camera_uniform;
 
     // Render to screen
     Pipeline        render_quad_pipeline = {};
@@ -36,6 +45,8 @@ class VCTRenderer : public Renderer {
 
     void init_render_quad_pipeline();
     void init_render_quad_bind_groups();
+
+    void init_camera_bind_group();
 
 #if defined(XR_SUPPORT)
 

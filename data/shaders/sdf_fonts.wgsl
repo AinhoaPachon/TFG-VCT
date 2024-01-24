@@ -1,40 +1,13 @@
 //https://medium.com/@calebfaith/implementing-msdf-font-in-opengl-ea09a9ab7e00
 
-struct VertexInput {
-    @builtin(instance_index) instance_id : u32,
-    @location(0) position: vec3f,
-    @location(1) uv: vec2f,
-    @location(2) normal: vec3f,
-    @location(3) color: vec3f,
-
-};
-
-struct VertexOutput {
-    @builtin(position) position: vec4f,
-    @location(0) uv: vec2f,
-    @location(1) normal: vec3f,
-    @location(2) color: vec3f,
-};
-
-struct RenderMeshData {
-    model  : mat4x4f,
-    color  : vec4f,
-};
-
-struct InstanceData {
-    data : array<RenderMeshData>
-}
-
-struct CameraData {
-    view_projection : mat4x4f,
-};
+#include mesh_includes.wgsl
 
 @group(0) @binding(0) var<storage, read> mesh_data : InstanceData;
 
 @group(1) @binding(0) var<uniform> camera_data : CameraData;
 
 @group(2) @binding(0) var texture: texture_2d<f32>;
-@group(2) @binding(1) var texture_sampler : sampler;
+@group(2) @binding(7) var texture_sampler : sampler;
 
 @vertex
 fn vs_main(in: VertexInput) -> VertexOutput {
@@ -42,7 +15,9 @@ fn vs_main(in: VertexInput) -> VertexOutput {
     let instance_data : RenderMeshData = mesh_data.data[in.instance_id];
 
     var out: VertexOutput;
-    out.position = camera_data.view_projection * instance_data.model * vec4f(in.position, 1.0);
+    var world_position = instance_data.model * vec4f(in.position, 1.0);
+    out.world_position = world_position.xyz;
+    out.position = camera_data.view_projection * world_position;
     out.uv = in.uv; // forward to the fragment shader
     out.color = in.color * instance_data.color.rgb;
     out.normal = in.normal;
@@ -65,6 +40,9 @@ fn screenPxRange( pxRange : f32, texCoord : vec2f ) -> f32 {
 
 @fragment
 fn fs_main(in: VertexOutput) -> FragmentOutput {
+    
+    var dummy = camera_data.eye;
+    var dummy_sampler : vec3f = textureSample(texture, texture_sampler, in.uv).rgb;
 
     var out: FragmentOutput;
 
@@ -72,8 +50,7 @@ fn fs_main(in: VertexOutput) -> FragmentOutput {
     var fgColor : vec4f = vec4f(in.color, 1.0);
 
     var sz : vec2f = vec2f(textureDimensions(texture));
-    // var msd : vec3f = textureLoad(texture, vec2u(in.uv * sz), 0).rgb;
-    var msd : vec3f = textureSample(texture, texture_sampler, in.uv).rgb;
+    var msd : vec3f = textureLoad(texture, vec2u(in.uv * sz), 0).rgb;
     var sd : f32 = median(msd.r, msd.g, msd.b);
     var screenPxDistance = screenPxRange(4.0, in.uv) * (sd - 0.5);
     var opacity = clamp(screenPxDistance + 0.5, 0.0, 1.0);

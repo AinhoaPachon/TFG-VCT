@@ -2,13 +2,9 @@
 
 #define GAMMA_CORRECTION
 
-
 @group(0) @binding(0) var<storage, read> mesh_data : InstanceData;
 
 @group(1) @binding(0) var<uniform> camera_data : CameraData;
-
-@group(2) @binding(0) var albedo_texture: texture_2d<f32>;
-@group(2) @binding(7) var texture_sampler : sampler;
 
 @vertex
 fn vs_main(in: VertexInput) -> VertexOutput {
@@ -16,12 +12,15 @@ fn vs_main(in: VertexInput) -> VertexOutput {
     let instance_data : RenderMeshData = mesh_data.data[in.instance_id];
 
     var out: VertexOutput;
-    var world_position = instance_data.model * vec4f(in.position, 1.0);
-    out.world_position = world_position.xyz;
-    out.position = camera_data.view_projection * world_position;
     out.uv = in.uv; // forward to the fragment shader
     out.color = in.color * instance_data.color.rgb;
-    out.normal = in.normal;
+    out.normal = (instance_data.model * vec4f(in.normal, 0.0)).xyz;
+
+    var grow_pos = in.position + normalize(in.normal) * 0.0018;
+    var world_position = instance_data.model * vec4f(grow_pos, 1.0);
+    out.world_position = world_position.xyz;
+    out.position = camera_data.view_projection * world_position;
+
     return out;
 }
 
@@ -31,24 +30,17 @@ struct FragmentOutput {
 
 @fragment
 fn fs_main(in: VertexOutput) -> FragmentOutput {
-    
-    var dummy = camera_data.eye;
 
     var out: FragmentOutput;
-    var color : vec4f = textureSample(albedo_texture, texture_sampler, in.uv);
-    color = pow(color, vec4f(2.2));
+    var dummy = camera_data.eye;
 
-    if (color.a < 0.9) {
-        discard;
-    }
-
-    var _color = color.rgb;
+    var color = in.color;
 
     if (GAMMA_CORRECTION == 1) {
-        _color = pow(_color, vec3f(1.0 / 2.2));
+        color = pow(color, vec3f(1.0 / 2.2));
     }
 
-    out.color = vec4f(in.color * _color, color.a);
+    out.color = vec4f(color, 0.3);
 
     return out;
 }
