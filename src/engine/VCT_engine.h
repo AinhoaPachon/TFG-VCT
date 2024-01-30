@@ -12,6 +12,14 @@ class VCTEngine : public Engine {
 
 	// dimensions of the voxel grid: widht, height and depth
 	uint32_t grid_size;
+
+	struct gridData {
+		glm::vec4 bounds_min;
+		float cell_half_size;
+		int grid_width;
+		int grid_height;
+		int grid_depth;
+	} grid_data;
 	
 	Pipeline		voxelization_pipeline;
 	Shader*			voxelization_shader = nullptr;
@@ -40,14 +48,6 @@ public:
 	void render() override;
 
 private:
-
-	struct gridData {
-		glm::vec4 bounds_min;
-		float cell_half_size;
-		int grid_width;
-		int grid_height;
-		int grid_depth;
-	};
 
 	struct meshData {
 

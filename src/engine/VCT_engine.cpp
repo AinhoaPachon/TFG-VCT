@@ -13,7 +13,7 @@ int VCTEngine::initialize(Renderer* renderer, GLFWwindow* window, bool use_glfw,
 {
 	int error = Engine::initialize(renderer, window, use_glfw, use_mirror_screen);
 
-	grid_size = 1024;
+	grid_size = 256;
 
     /*EntityMesh* cube = parse_scene("data/meshes/cube/cube.obj", entities);
     cube->scale(glm::vec3(0.25));
@@ -56,21 +56,20 @@ void VCTEngine::init_bindings_voxelization_pipeline()
 {
 	WebGPUContext* webgpu_context = VCTRenderer::instance->get_webgpu_context();
 
-	uint32_t grid_size = 1024;
+	uint32_t grid_size = 128;
 	std::vector<glm::vec4> initial_values;
 
 	voxel_voxelGridPointsBuffer.binding = 0;
 	voxel_voxelGridPointsBuffer.buffer_size = sizeof(glm::vec4) * grid_size * grid_size * grid_size;
 	voxel_voxelGridPointsBuffer.data = webgpu_context->create_buffer(voxel_voxelGridPointsBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Storage, initial_values.data(), "grid points buffer");
 
-	gridData* grid = {};
-	grid->bounds_min = glm::vec4(0.0, 0.0, 0.0, 0.0);
-	grid->cell_half_size = 2.0f;
-	grid->grid_width = grid->grid_height = grid->grid_depth = grid_size;
+	grid_data.bounds_min = glm::vec4(0.0, 0.0, 0.0, 0.0);
+	grid_data.cell_half_size = 2.0f;
+	grid_data.grid_width = grid_data.grid_height = grid_data.grid_depth = grid_size;
 
 	voxel_gridDataBuffer.binding = 1;
 	voxel_gridDataBuffer.buffer_size = sizeof(gridData);
-	voxel_gridDataBuffer.data = webgpu_context->create_buffer(voxel_gridDataBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Uniform, grid, "grid data buffer");
+	voxel_gridDataBuffer.data = webgpu_context->create_buffer(voxel_gridDataBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Uniform, &grid_data, "grid data buffer");
 
 	//voxel_meshDataBuffer.binding = 0;
 	//voxel_cameraDataBuffer.binding = 0;
