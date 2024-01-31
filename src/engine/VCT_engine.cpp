@@ -13,7 +13,7 @@ int VCTEngine::initialize(Renderer* renderer, GLFWwindow* window, bool use_glfw,
 {
 	int error = Engine::initialize(renderer, window, use_glfw, use_mirror_screen);
 
-	grid_size = 256;
+	grid_size = 128;
 
     /*EntityMesh* cube = parse_scene("data/meshes/cube/cube.obj", entities);
     cube->scale(glm::vec3(0.25));
@@ -54,10 +54,15 @@ void VCTEngine::init_compute_voxelization()
 
 void VCTEngine::init_bindings_voxelization_pipeline()
 {
+	RenderdocCapture::start_capture_frame();
 	WebGPUContext* webgpu_context = VCTRenderer::instance->get_webgpu_context();
 
 	uint32_t grid_size = 128;
 	std::vector<glm::vec4> initial_values;
+
+	//for (int i = 0; i < grid_size * grid_size * grid_size; ++i) {
+	//	initial_values.push_back(glm::vec4(0.0, 0.0, 0.0, 0.0));
+	//}
 
 	voxel_voxelGridPointsBuffer.binding = 0;
 	voxel_voxelGridPointsBuffer.buffer_size = sizeof(glm::vec4) * grid_size * grid_size * grid_size;
@@ -77,7 +82,8 @@ void VCTEngine::init_bindings_voxelization_pipeline()
 
 void VCTEngine::onCompute()
 {
-    WebGPUContext* webgpu_context = VCTRenderer::instance->get_webgpu_context();
+	
+	WebGPUContext* webgpu_context = VCTRenderer::instance->get_webgpu_context();
     WGPUQueue queue = webgpu_context->device_queue;
 
 	WGPUCommandEncoderDescriptor encorderDesc = {};
@@ -99,7 +105,7 @@ void VCTEngine::onCompute()
 	*/
 
 	// Ceil invocationCount / workgroupSize
-	uint32_t workgroup_size = 8 * 8 * 8;
+	uint32_t workgroup_size = 8 * 8 * 4;
 	uint32_t workgroup_count = ceil(grid_size * grid_size * grid_size / workgroup_size);
 	wgpuComputePassEncoderDispatchWorkgroups(computePass, workgroup_count, 1, 1);
 
@@ -113,6 +119,7 @@ void VCTEngine::onCompute()
 	wgpuCommandBufferRelease(commands);
 	wgpuComputePassEncoderRelease(computePass);
 	wgpuCommandEncoderRelease(encod);
+	RenderdocCapture::end_capture_frame();
 }
 
 void VCTEngine::clean()

@@ -4,6 +4,9 @@
 #include "dawnxr/dawnxr_internal.h"
 #endif
 
+#include "backends/imgui_impl_glfw.h"
+#include "backends/imgui_impl_wgpu.h"
+
 VCTRenderer::VCTRenderer() : Renderer()
 {
     
@@ -94,7 +97,7 @@ void VCTRenderer::render_screen()
 
     WGPUTextureView swapchain_view = wgpuSwapChainGetCurrentTextureView(webgpu_context.screen_swapchain);
 
-    //ImGui::Render();
+    ImGui::Render();
 
     {
         // Create the command encoder
