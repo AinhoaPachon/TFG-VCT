@@ -6,6 +6,8 @@
 
 class Entity;
 
+// Engine para gestion de escena
+
 class VCTEngine : public Engine {
 
     std::vector<Entity*> entities;
@@ -25,14 +27,8 @@ class VCTEngine : public Engine {
 	Shader*			voxelization_shader = nullptr;
 	WGPUBindGroup   voxelization_bindgroup = nullptr;
 
-	//Uniform			compute_inputBuffer;
-	//Uniform			compute_outputBuffer;
-	//Uniform			compute_mapBuffer;
-
 	Uniform			voxel_voxelGridPointsBuffer;
 	Uniform			voxel_gridDataBuffer;
-	Uniform			voxel_meshDataBuffer;
-	Uniform			voxel_cameraDataBuffer;
 
 public:
 

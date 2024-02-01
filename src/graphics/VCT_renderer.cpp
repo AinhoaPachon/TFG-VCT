@@ -47,6 +47,9 @@ void VCTRenderer::clean()
     eye_render_texture_uniform[EYE_LEFT].destroy();
     eye_render_texture_uniform[EYE_RIGHT].destroy();
 
+    voxel_meshDataBuffer.destroy();
+    voxel_cameraDataBuffer.destroy();
+
     wgpuBindGroupRelease(eye_render_bind_group[EYE_LEFT]);
     wgpuBindGroupRelease(eye_render_bind_group[EYE_RIGHT]);
 
@@ -253,6 +256,34 @@ void VCTRenderer::render_xr()
     xr_context.end_frame();
 }
 #endif
+void VCTRenderer::init_render_voxelization_pipeline()
+{
+    render_voxelization_shader = RendererStorage::get_shader("data/shaders/voxel_grid_points_fill.wgsl");
+
+    WebGPUContext* webgpu_context = VCTRenderer::instance->get_webgpu_context();
+
+    struct sInstanceData {
+        std::array<sRenderMeshData> data;
+    };
+
+    voxel_meshDataBuffer.binding = 0;
+    voxel_meshDataBuffer.buffer_size = sizeof(glm::vec4) * grid_size * grid_size * grid_size;
+    voxel_meshDataBuffer.data = webgpu_context->create_buffer(voxel_meshDataBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Storage, initial_values.data(), "grid points buffer");
+
+
+    voxel_cameraDataBuffer.binding = 1;
+    voxel_cameraDataBuffer.buffer_size = sizeof(camera_data);
+    voxel_cameraDataBuffer.data = webgpu_context->create_buffer(voxel_cameraDataBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Uniform, &camera_data, "grid data buffer");
+
+    //// Set bindings for the voxelization pipeline
+    //init_bindings_voxelization_pipeline();
+
+    //// set grid_data uniforms and camera_data uniforms
+    //std::vector<Uniform*> uniforms = { &voxel_voxelGridPointsBuffer, &voxel_gridDataBuffer };
+    //voxelization_bindgroup = webgpu_context->create_bind_group(uniforms, voxelization_shader, 0);
+
+    //voxelization_pipeline.create_compute(voxelization_shader);
+}
 
 void VCTRenderer::render_eye_quad(WGPUTextureView swapchain_view, WGPUTextureView swapchain_depth, WGPUBindGroup bind_group)
 {

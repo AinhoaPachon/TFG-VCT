@@ -15,10 +15,10 @@ int VCTEngine::initialize(Renderer* renderer, GLFWwindow* window, bool use_glfw,
 
 	grid_size = 128;
 
-    /*EntityMesh* cube = parse_scene("data/meshes/cube/cube.obj", entities);
-    cube->scale(glm::vec3(0.25));
-    cube->translate(glm::vec3(1.0f, 0.0, 0.0));
-    entities.push_back(cube);*/
+    EntityMesh* torus = parse_mesh("data/meshes/torus/torus.obj");
+	torus->scale(glm::vec3(0.25));
+	torus->translate(glm::vec3(1.0f, 0.0, 0.0));
+    entities.push_back(torus);
 
     /*
     TextEntity* text = new TextEntity("oppenheimer vs barbie");
@@ -128,8 +128,6 @@ void VCTEngine::clean()
 
 	voxel_voxelGridPointsBuffer.destroy();
 	voxel_gridDataBuffer.destroy();
-	voxel_meshDataBuffer.destroy();
-	voxel_cameraDataBuffer.destroy();
 
 	wgpuBindGroupRelease(voxelization_bindgroup);
 }

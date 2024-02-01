@@ -15,6 +15,8 @@
 #define DISABLE_RAYMARCHER
 //#endif
 
+// Si se muestra por pantalla, esta es tu clase bebe
+
 class VCTRenderer : public Renderer {
 
     MeshRenderer    mesh_renderer;
@@ -26,7 +28,19 @@ class VCTRenderer : public Renderer {
         glm::vec3 eye;
         float dummy;
     } camera_data;
-    Uniform camera_uniform;
+    Uniform         camera_uniform;
+
+    Pipeline		render_voxelization_pipeline;
+    Shader*         render_voxelization_shader = nullptr;
+    WGPUBindGroup   render_voxelization_bindgroup = nullptr;
+
+    struct sRenderMeshData {
+        glm::mat4x4 model;
+        glm::vec4 color;
+    } mesh_data;
+
+    Uniform			voxel_meshDataBuffer;
+    Uniform			voxel_cameraDataBuffer;
 
     // Render to screen
     Pipeline        render_quad_pipeline = {};
@@ -47,6 +61,8 @@ class VCTRenderer : public Renderer {
     void init_render_quad_bind_groups();
 
     void init_camera_bind_group();
+
+    void init_render_voxelization_pipeline();
 
 #if defined(XR_SUPPORT)
 
