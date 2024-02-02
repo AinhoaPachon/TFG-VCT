@@ -10,7 +10,6 @@ class Entity;
 
 class VCTEngine : public Engine {
 
-    std::vector<Entity*> entities;
 
 	// dimensions of the voxel grid: widht, height and depth
 	uint32_t grid_size;
@@ -31,6 +30,7 @@ class VCTEngine : public Engine {
 	Uniform			voxel_gridDataBuffer;
 
 public:
+	std::vector<Entity*> entities;
 
 	int initialize(Renderer* renderer, GLFWwindow* window, bool use_glfw, bool use_mirror_screen) override;
 	void init_compute_voxelization();

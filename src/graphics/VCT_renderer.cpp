@@ -7,6 +7,8 @@
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_wgpu.h"
 
+#include "engine/VCT_engine.h"
+
 VCTRenderer::VCTRenderer() : Renderer()
 {
     
@@ -262,9 +264,11 @@ void VCTRenderer::init_render_voxelization_pipeline()
 
     WebGPUContext* webgpu_context = VCTRenderer::instance->get_webgpu_context();
 
-    struct sInstanceData {
-        std::array<sRenderMeshData> data;
-    };
+    dynamic_cast<VCTEngine*>(VCTEngine::instance)->entities;
+
+   /* struct sInstanceData {
+        std::array < sRenderMeshData, > data;
+    };*/
 
     voxel_meshDataBuffer.binding = 0;
     voxel_meshDataBuffer.buffer_size = sizeof(glm::vec4) * grid_size * grid_size * grid_size;
