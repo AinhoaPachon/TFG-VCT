@@ -11,6 +11,9 @@
 
 #include "framework/camera/flyover_camera.h"
 
+#include "engine/VCT_engine.h"
+
+
 //#ifdef __EMSCRIPTEN__
 #define DISABLE_RAYMARCHER
 //#endif

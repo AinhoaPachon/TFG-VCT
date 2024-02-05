@@ -7,7 +7,6 @@
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_wgpu.h"
 
-#include "engine/VCT_engine.h"
 
 VCTRenderer::VCTRenderer() : Renderer()
 {
@@ -23,6 +22,8 @@ int VCTRenderer::initialize(GLFWwindow* window, bool use_mirror_screen)
     init_render_quad_pipeline();
     init_camera_bind_group();
     mesh_renderer.initialize();
+
+    init_render_voxelization_pipeline();
 
 #ifdef XR_SUPPORT
     if (is_openxr_available && use_mirror_screen) {
@@ -265,13 +266,17 @@ void VCTRenderer::init_render_voxelization_pipeline()
     WebGPUContext* webgpu_context = VCTRenderer::instance->get_webgpu_context();
 
     std::vector<Entity*> entities = dynamic_cast<VCTEngine*>(VCTEngine::instance)->entities;
+    
     for (int i = 0; i < sizeof(entities); ++i) {
-        
+        mesh_data.model = entities[i]->get_model();
+        mesh_data.color = glm::vec4(1.0, 0.0, 0.0, 1.0);
+
+        instance_data.data[i] = mesh_data;
     }
 
     voxel_meshDataBuffer.binding = 0;
     voxel_meshDataBuffer.buffer_size = sizeof(glm::vec4);
-    voxel_meshDataBuffer.data = webgpu_context->create_buffer(voxel_meshDataBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Storage, initial_values.data(), "grid points buffer");
+    voxel_meshDataBuffer.data = webgpu_context->create_buffer(voxel_meshDataBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Storage, &instance_data, "grid points buffer");
 
 
     voxel_cameraDataBuffer.binding = 1;
