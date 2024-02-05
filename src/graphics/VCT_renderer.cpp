@@ -264,14 +264,13 @@ void VCTRenderer::init_render_voxelization_pipeline()
 
     WebGPUContext* webgpu_context = VCTRenderer::instance->get_webgpu_context();
 
-    dynamic_cast<VCTEngine*>(VCTEngine::instance)->entities;
-
-   /* struct sInstanceData {
-        std::array < sRenderMeshData, > data;
-    };*/
+    std::vector<Entity*> entities = dynamic_cast<VCTEngine*>(VCTEngine::instance)->entities;
+    for (int i = 0; i < sizeof(entities); ++i) {
+        
+    }
 
     voxel_meshDataBuffer.binding = 0;
-    voxel_meshDataBuffer.buffer_size = sizeof(glm::vec4) * grid_size * grid_size * grid_size;
+    voxel_meshDataBuffer.buffer_size = sizeof(glm::vec4);
     voxel_meshDataBuffer.data = webgpu_context->create_buffer(voxel_meshDataBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Storage, initial_values.data(), "grid points buffer");
 
 

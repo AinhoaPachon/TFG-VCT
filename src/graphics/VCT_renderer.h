@@ -39,6 +39,10 @@ class VCTRenderer : public Renderer {
         glm::vec4 color;
     } mesh_data;
 
+    struct sInstanceData {
+        std::array < sRenderMeshData, sizeof(dynamic_cast<VCTEngine*>(VCTEngine::instance)->entities)> data;
+    } instance_data;
+
     Uniform			voxel_meshDataBuffer;
     Uniform			voxel_cameraDataBuffer;
 
