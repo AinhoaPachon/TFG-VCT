@@ -33,6 +33,9 @@ public:
 	std::vector<Entity*> entities;
 
 	int initialize(Renderer* renderer, GLFWwindow* window, bool use_glfw, bool use_mirror_screen) override;
+
+	void fill_entities();
+
 	void init_compute_voxelization();
 	void init_bindings_voxelization_pipeline();
 

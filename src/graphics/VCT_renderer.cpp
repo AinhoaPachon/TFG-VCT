@@ -14,7 +14,7 @@ VCTRenderer::VCTRenderer() : Renderer()
 }
 
 int VCTRenderer::initialize(GLFWwindow* window, bool use_mirror_screen)
-{
+ {
     Renderer::initialize(window, use_mirror_screen);
 
     clear_color = glm::vec4(0.22f, 0.22f, 0.22f, 1.0);
@@ -23,6 +23,7 @@ int VCTRenderer::initialize(GLFWwindow* window, bool use_mirror_screen)
     init_camera_bind_group();
     mesh_renderer.initialize();
 
+    dynamic_cast<VCTEngine*>(VCTEngine::instance)->fill_entities();
     init_render_voxelization_pipeline();
 
 #ifdef XR_SUPPORT
@@ -104,6 +105,7 @@ void VCTRenderer::render_screen()
     WGPUTextureView swapchain_view = wgpuSwapChainGetCurrentTextureView(webgpu_context.screen_swapchain);
 
     ImGui::Render();
+
 
     {
         // Create the command encoder
@@ -267,7 +269,7 @@ void VCTRenderer::init_render_voxelization_pipeline()
 
     std::vector<Entity*> entities = dynamic_cast<VCTEngine*>(VCTEngine::instance)->entities;
     
-    for (int i = 0; i < sizeof(entities); ++i) {
+    for (int i = 0; i < entities.size(); ++i) {
         mesh_data.model = entities[i]->get_model();
         mesh_data.color = glm::vec4(1.0, 0.0, 0.0, 1.0);
 
