@@ -48,6 +48,8 @@ void VCTRenderer::clean()
 
     mesh_renderer.clean();
 
+    
+
     eye_render_texture_uniform[EYE_LEFT].destroy();
     eye_render_texture_uniform[EYE_RIGHT].destroy();
 
@@ -56,6 +58,8 @@ void VCTRenderer::clean()
 
     wgpuBindGroupRelease(eye_render_bind_group[EYE_LEFT]);
     wgpuBindGroupRelease(eye_render_bind_group[EYE_RIGHT]);
+
+    wgpuBindGroupRelease(render_voxelization_bindgroup);
 
     wgpuTextureViewRelease(eye_depth_texture_view[EYE_LEFT]);
     wgpuTextureViewRelease(eye_depth_texture_view[EYE_RIGHT]);
@@ -105,7 +109,6 @@ void VCTRenderer::render_screen()
     WGPUTextureView swapchain_view = wgpuSwapChainGetCurrentTextureView(webgpu_context.screen_swapchain);
 
     ImGui::Render();
-
 
     {
         // Create the command encoder
@@ -175,6 +178,11 @@ void VCTRenderer::render_screen()
 #ifndef __EMSCRIPTEN__
     wgpuSwapChainPresent(webgpu_context.screen_swapchain);
 #endif
+}
+
+void VCTRenderer::render_3D_grid()
+{
+    
 }
 
 #if defined(XR_SUPPORT)
@@ -267,6 +275,25 @@ void VCTRenderer::init_render_voxelization_pipeline()
 
     WebGPUContext* webgpu_context = VCTRenderer::instance->get_webgpu_context();
 
+    WGPUTextureFormat swapchain_format = webgpu_context->swapchain_format;
+
+    WGPUBlendState blend_state = {};
+    blend_state.color = {
+            .operation = WGPUBlendOperation_Add,
+            .srcFactor = WGPUBlendFactor_SrcAlpha,
+            .dstFactor = WGPUBlendFactor_OneMinusSrcAlpha,
+    };
+    blend_state.alpha = {
+            .operation = WGPUBlendOperation_Add,
+            .srcFactor = WGPUBlendFactor_Zero,
+            .dstFactor = WGPUBlendFactor_One,
+    };
+
+    WGPUColorTargetState color_target = {};
+    color_target.format = swapchain_format;
+    color_target.blend = &blend_state;
+    color_target.writeMask = WGPUColorWriteMask_All;
+
     std::vector<Entity*> entities = dynamic_cast<VCTEngine*>(VCTEngine::instance)->entities;
     
     for (int i = 0; i < entities.size(); ++i) {
@@ -277,22 +304,18 @@ void VCTRenderer::init_render_voxelization_pipeline()
     }
 
     voxel_meshDataBuffer.binding = 0;
-    voxel_meshDataBuffer.buffer_size = sizeof(glm::vec4);
+    voxel_meshDataBuffer.buffer_size = sizeof(instance_data);
     voxel_meshDataBuffer.data = webgpu_context->create_buffer(voxel_meshDataBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Storage, &instance_data, "grid points buffer");
 
-
     voxel_cameraDataBuffer.binding = 1;
-    voxel_cameraDataBuffer.buffer_size = sizeof(camera_data);
+    voxel_cameraDataBuffer.buffer_size = sizeof(sCameraData);
     voxel_cameraDataBuffer.data = webgpu_context->create_buffer(voxel_cameraDataBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Uniform, &camera_data, "grid data buffer");
 
-    //// Set bindings for the voxelization pipeline
-    //init_bindings_voxelization_pipeline();
+    std::vector<Uniform*> uniforms = { &voxel_meshDataBuffer, &voxel_cameraDataBuffer };
+    render_voxelization_bindgroup = webgpu_context->create_bind_group(uniforms, render_voxelization_shader, 0);
 
-    //// set grid_data uniforms and camera_data uniforms
-    //std::vector<Uniform*> uniforms = { &voxel_voxelGridPointsBuffer, &voxel_gridDataBuffer };
-    //voxelization_bindgroup = webgpu_context->create_bind_group(uniforms, voxelization_shader, 0);
+    render_voxelization_pipeline.create_render(render_voxelization_shader, color_target, { .uses_depth_buffer = false });
 
-    //voxelization_pipeline.create_compute(voxelization_shader);
 }
 
 void VCTRenderer::render_eye_quad(WGPUTextureView swapchain_view, WGPUTextureView swapchain_depth, WGPUBindGroup bind_group)

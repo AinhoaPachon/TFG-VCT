@@ -64,6 +64,8 @@ class VCTRenderer : public Renderer {
     void render_eye_quad(WGPUTextureView swapchain_view, WGPUTextureView swapchain_depth, WGPUBindGroup bind_group);
     void render_screen();
 
+    void render_3D_grid();
+
     void init_render_quad_pipeline();
     void init_render_quad_bind_groups();
 
