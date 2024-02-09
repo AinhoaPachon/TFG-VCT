@@ -22,10 +22,9 @@ int VCTEngine::initialize(Renderer* renderer, GLFWwindow* window, bool use_glfw,
     text->translate(glm::vec3(0.0f, 0.0, -5.0));
     entities.push_back(text);*/
 
-	init_compute_voxelization();
+	/*init_compute_voxelization();
 	init_bindings_voxelization_pipeline();
-
-	onCompute();
+	onCompute();*/
 
 	return error;
 }

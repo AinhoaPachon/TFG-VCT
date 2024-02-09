@@ -26,11 +26,11 @@ class VCTEngine : public Engine {
 	Shader*			voxelization_shader = nullptr;
 	WGPUBindGroup   voxelization_bindgroup = nullptr;
 
-	Uniform			voxel_voxelGridPointsBuffer;
 	Uniform			voxel_gridDataBuffer;
 
 public:
 	std::vector<Entity*> entities;
+	Uniform			voxel_voxelGridPointsBuffer;
 
 	int initialize(Renderer* renderer, GLFWwindow* window, bool use_glfw, bool use_mirror_screen) override;
 

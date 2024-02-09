@@ -36,6 +36,7 @@ class VCTRenderer : public Renderer {
     Pipeline		render_voxelization_pipeline;
     Shader*         render_voxelization_shader = nullptr;
     WGPUBindGroup   render_voxelization_bindgroup = nullptr;
+    WGPUBindGroup   render_voxel_grid_bindgroup = nullptr;
 
     struct sRenderMeshData {
         glm::mat4x4 model;

@@ -23,6 +23,10 @@ int VCTRenderer::initialize(GLFWwindow* window, bool use_mirror_screen)
     init_camera_bind_group();
     mesh_renderer.initialize();
 
+    dynamic_cast<VCTEngine*>(VCTEngine::instance)->init_compute_voxelization();
+    dynamic_cast<VCTEngine*>(VCTEngine::instance)->init_bindings_voxelization_pipeline();
+    dynamic_cast<VCTEngine*>(VCTEngine::instance)->onCompute();
+
     dynamic_cast<VCTEngine*>(VCTEngine::instance)->fill_entities();
     init_render_voxelization_pipeline();
 
@@ -271,7 +275,7 @@ void VCTRenderer::render_xr()
 #endif
 void VCTRenderer::init_render_voxelization_pipeline()
 {
-    render_voxelization_shader = RendererStorage::get_shader("data/shaders/voxel_grid_points_fill.wgsl");
+    render_voxelization_shader = RendererStorage::get_shader("data/shaders/draw_voxel_grid.wgsl");
 
     WebGPUContext* webgpu_context = VCTRenderer::instance->get_webgpu_context();
 
@@ -313,6 +317,9 @@ void VCTRenderer::init_render_voxelization_pipeline()
 
     std::vector<Uniform*> uniforms = { &voxel_meshDataBuffer, &voxel_cameraDataBuffer };
     render_voxelization_bindgroup = webgpu_context->create_bind_group(uniforms, render_voxelization_shader, 0);
+
+    uniforms = { &dynamic_cast<VCTEngine*>(VCTEngine::instance)->voxel_voxelGridPointsBuffer };
+    render_voxel_grid_bindgroup = webgpu_context->create_bind_group(uniforms, render_voxelization_shader, 1);
 
     render_voxelization_pipeline.create_render(render_voxelization_shader, color_target, { .uses_depth_buffer = false });
 

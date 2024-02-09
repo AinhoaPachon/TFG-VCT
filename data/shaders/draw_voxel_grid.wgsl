@@ -28,6 +28,7 @@ struct CameraData {
 
 @group(0) @binding(0) var<storage, read> mesh_data : InstanceData;
 @group(0) @binding(1) var<uniform> camera_data : CameraData;
+@group(1) @binding(0) var<storage, read> _VoxelGridPoints: array<vec4f>;
 
 @vertex
 fn vs_main(in: VertexInput) -> VertexOutput {
@@ -35,7 +36,7 @@ fn vs_main(in: VertexInput) -> VertexOutput {
     let instance_data : RenderMeshData = mesh_data.data[in.instance_id];
     
     var out: VertexOutput;
-    var localPos : vec4f = _VoxelGridPoints[instance_index];
+    var localPos : vec4f = _VoxelGridPoints[in.instance_id];
     out.position = camera_data.view_projection * instance_data.model * vec4f(in.position, 1.0);
     out.color = in.color;
     out.size = 5;
@@ -48,5 +49,7 @@ struct FragmentOutput {
 
 @fragment
 fn fs_main(in: VertexOutput) -> FragmentOutput {
-    return in.color;
+    var out : FragmentOutput;
+    out.color = vec4f(in.color, 1.0);
+    return out;
 }
