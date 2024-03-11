@@ -117,13 +117,9 @@ void MeshRenderer::init_render_mesh_pipelines()
 
     // Camera
 
-    camera_uniform.data = webgpu_context->create_buffer(sizeof(glm::mat4x4), WGPUBufferUsage_CopyDst | WGPUBufferUsage_Uniform, nullptr, "camera_buffer");
-    camera_uniform.binding = 0;
-    camera_uniform.buffer_size = sizeof(glm::mat4x4);
+    std::vector<Uniform*> uniforms = { dynamic_cast<VCTRenderer*>(VCTRenderer::instance)->get_current_camera_uniform() };
 
-    std::vector<Uniform*> uniforms = { &camera_uniform };
-
-    render_bind_group_camera = webgpu_context->create_bind_group(uniforms, render_mesh_shader, 1);
+    render_bind_group_camera = webgpu_context->create_bind_group(uniforms, RendererStorage::get_shader("data/shaders/draw_voxel_grid.wgsl"), 1);
 
     WGPUTextureFormat swapchain_format = is_openxr_available ? webgpu_context->xr_swapchain_format : webgpu_context->swapchain_format;
 

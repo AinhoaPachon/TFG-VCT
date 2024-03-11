@@ -26,6 +26,20 @@ int VCTEngine::initialize(Renderer* renderer, GLFWwindow* window, bool use_glfw,
 	init_bindings_voxelization_pipeline();
 	onCompute();*/
 
+	floor_grid_mesh = new EntityMesh();
+	floor_grid_mesh->add_surface(RendererStorage::get_surface("quad"));
+	floor_grid_mesh->set_translation(glm::vec3(0.0f));
+	floor_grid_mesh->rotate(glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+	floor_grid_mesh->scale(glm::vec3(3.f));
+
+	Material grid_material;
+	render_voxelization_shader = RendererStorage::get_shader("data/shaders/draw_voxel_grid.wgsl");
+	//render_voxelization_shader = RendererStorage::get_shader("data/shaders/mesh_grid.wgsl");
+	grid_material.shader = render_voxelization_shader;
+	grid_material.flags |= MATERIAL_TRANSPARENT;
+
+	floor_grid_mesh->set_surface_material_override(floor_grid_mesh->get_surface(0), grid_material);
+
 	return error;
 }
 
@@ -62,29 +76,25 @@ void VCTEngine::init_bindings_voxelization_pipeline()
 	uint32_t grid_size = 128;
 	std::vector<glm::vec4> initial_values;
 
-	//for (int i = 0; i < grid_size * grid_size * grid_size; ++i) {
-	//	initial_values.push_back(glm::vec4(0.0, 0.0, 0.0, 0.0));
-	//}
-
-	voxel_voxelGridPointsBuffer.binding = 0;
-	voxel_voxelGridPointsBuffer.buffer_size = sizeof(glm::vec4) * grid_size * grid_size * grid_size;
-	voxel_voxelGridPointsBuffer.data = webgpu_context->create_buffer(voxel_voxelGridPointsBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Storage, initial_values.data(), "grid points buffer");
-
 	grid_data.bounds_min = glm::vec4(0.0, 0.0, 0.0, 0.0);
 	grid_data.cell_half_size = 2.0f;
 	grid_data.grid_width = grid_data.grid_height = grid_data.grid_depth = grid_size;
 
-	voxel_gridDataBuffer.binding = 1;
+	voxel_gridDataBuffer.binding = 0;
 	voxel_gridDataBuffer.buffer_size = sizeof(gridData);
 	voxel_gridDataBuffer.data = webgpu_context->create_buffer(voxel_gridDataBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Uniform, &grid_data, "grid data buffer");
 
-	//voxel_meshDataBuffer.binding = 0;
-	//voxel_cameraDataBuffer.binding = 0;
+	//for (int i = 0; i < grid_size * grid_size * grid_size; ++i) {
+	//	initial_values.push_back(glm::vec4(0.0, 0.0, 0.0, 0.0));
+	//}
+
+	voxel_voxelGridPointsBuffer.binding = 1;
+	voxel_voxelGridPointsBuffer.buffer_size = sizeof(glm::vec4) * grid_size * grid_size * grid_size;
+	voxel_voxelGridPointsBuffer.data = webgpu_context->create_buffer(voxel_voxelGridPointsBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Storage, initial_values.data(), "grid points buffer");
 }
 
 void VCTEngine::onCompute()
 {
-	
 	WebGPUContext* webgpu_context = VCTRenderer::instance->get_webgpu_context();
     WGPUQueue queue = webgpu_context->device_queue;
 
@@ -146,6 +156,8 @@ void VCTEngine::render()
 	for (auto entity : entities) {
 		entity->render();
 	}
+
+	floor_grid_mesh->render();
 
 	Engine::render();
 }

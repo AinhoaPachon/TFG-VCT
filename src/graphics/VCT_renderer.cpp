@@ -19,15 +19,15 @@ int VCTRenderer::initialize(GLFWwindow* window, bool use_mirror_screen)
 
     clear_color = glm::vec4(0.22f, 0.22f, 0.22f, 1.0);
 
-    init_render_quad_pipeline();
     init_camera_bind_group();
+    init_render_quad_pipeline();
     mesh_renderer.initialize();
 
     dynamic_cast<VCTEngine*>(VCTEngine::instance)->init_compute_voxelization();
     dynamic_cast<VCTEngine*>(VCTEngine::instance)->init_bindings_voxelization_pipeline();
     dynamic_cast<VCTEngine*>(VCTEngine::instance)->onCompute();
 
-    dynamic_cast<VCTEngine*>(VCTEngine::instance)->fill_entities();
+    //dynamic_cast<VCTEngine*>(VCTEngine::instance)->fill_entities();
     init_render_voxelization_pipeline();
 
 #ifdef XR_SUPPORT
@@ -51,13 +51,10 @@ void VCTRenderer::clean()
     Renderer::clean();
 
     mesh_renderer.clean();
-
-    
-
+       
     eye_render_texture_uniform[EYE_LEFT].destroy();
     eye_render_texture_uniform[EYE_RIGHT].destroy();
 
-    voxel_meshDataBuffer.destroy();
     voxel_cameraDataBuffer.destroy();
 
     wgpuBindGroupRelease(eye_render_bind_group[EYE_LEFT]);
@@ -85,6 +82,8 @@ void VCTRenderer::update(float delta_time)
 
 void VCTRenderer::render()
 {
+    prepare_instancing();
+
     if (!is_openxr_available) {
         render_screen();
     }
@@ -184,11 +183,6 @@ void VCTRenderer::render_screen()
 #endif
 }
 
-void VCTRenderer::render_3D_grid()
-{
-    
-}
-
 #if defined(XR_SUPPORT)
 
 void VCTRenderer::render_xr()
@@ -275,8 +269,6 @@ void VCTRenderer::render_xr()
 #endif
 void VCTRenderer::init_render_voxelization_pipeline()
 {
-    render_voxelization_shader = RendererStorage::get_shader("data/shaders/draw_voxel_grid.wgsl");
-
     WebGPUContext* webgpu_context = VCTRenderer::instance->get_webgpu_context();
 
     WGPUTextureFormat swapchain_format = webgpu_context->swapchain_format;
@@ -298,31 +290,14 @@ void VCTRenderer::init_render_voxelization_pipeline()
     color_target.blend = &blend_state;
     color_target.writeMask = WGPUColorWriteMask_All;
 
-    std::vector<Entity*> entities = dynamic_cast<VCTEngine*>(VCTEngine::instance)->entities;
-    
-    for (int i = 0; i < entities.size(); ++i) {
-        mesh_data.model = entities[i]->get_model();
-        mesh_data.color = glm::vec4(1.0, 0.0, 0.0, 1.0);
+ 
 
-        instance_data.data[i] = mesh_data;
-    }
+    //dynamic_cast<VCTEngine*>(VCTEngine::instance)->voxel_voxelGridPointsBuffer;
 
-    voxel_meshDataBuffer.binding = 0;
-    voxel_meshDataBuffer.buffer_size = sizeof(instance_data);
-    voxel_meshDataBuffer.data = webgpu_context->create_buffer(voxel_meshDataBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Storage, &instance_data, "grid points buffer");
+    std::vector<Uniform*> uniforms = { &dynamic_cast<VCTEngine*>(VCTEngine::instance)->voxel_voxelGridPointsBuffer };
+    render_voxelization_bindgroup = webgpu_context->create_bind_group(uniforms, RendererStorage::get_shader("data/shaders/draw_voxel_grid.wgsl"), 2);
 
-    voxel_cameraDataBuffer.binding = 1;
-    voxel_cameraDataBuffer.buffer_size = sizeof(sCameraData);
-    voxel_cameraDataBuffer.data = webgpu_context->create_buffer(voxel_cameraDataBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Uniform, &camera_data, "grid data buffer");
-
-    std::vector<Uniform*> uniforms = { &voxel_meshDataBuffer, &voxel_cameraDataBuffer };
-    render_voxelization_bindgroup = webgpu_context->create_bind_group(uniforms, render_voxelization_shader, 0);
-
-    uniforms = { &dynamic_cast<VCTEngine*>(VCTEngine::instance)->voxel_voxelGridPointsBuffer };
-    render_voxel_grid_bindgroup = webgpu_context->create_bind_group(uniforms, render_voxelization_shader, 1);
-
-    render_voxelization_pipeline.create_render(render_voxelization_shader, color_target, { .uses_depth_buffer = false });
-
+    render_voxelization_pipeline.create_render(RendererStorage::get_shader("data/shaders/draw_voxel_grid.wgsl"), color_target);
 }
 
 void VCTRenderer::render_eye_quad(WGPUTextureView swapchain_view, WGPUTextureView swapchain_depth, WGPUBindGroup bind_group)
@@ -463,7 +438,7 @@ void VCTRenderer::init_render_quad_pipeline()
 
     WGPUTextureFormat swapchain_format = is_openxr_available ? webgpu_context.xr_swapchain_format : webgpu_context.swapchain_format;
 
-    WGPUBlendState blend_state;
+    WGPUBlendState blend_state{};
     blend_state.color = {
             .operation = WGPUBlendOperation_Add,
             .srcFactor = WGPUBlendFactor_SrcAlpha,

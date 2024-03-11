@@ -23,7 +23,6 @@
 class VCTRenderer : public Renderer {
 
     MeshRenderer    mesh_renderer;
-
     Surface         quad_surface;
 
     struct sCameraData {
@@ -34,20 +33,8 @@ class VCTRenderer : public Renderer {
     Uniform         camera_uniform;
 
     Pipeline		render_voxelization_pipeline;
-    Shader*         render_voxelization_shader = nullptr;
     WGPUBindGroup   render_voxelization_bindgroup = nullptr;
-    WGPUBindGroup   render_voxel_grid_bindgroup = nullptr;
 
-    struct sRenderMeshData {
-        glm::mat4x4 model;
-        glm::vec4 color;
-    } mesh_data;
-
-    struct sInstanceData {
-        std::array < sRenderMeshData, sizeof(dynamic_cast<VCTEngine*>(VCTEngine::instance)->entities)> data;
-    } instance_data;
-
-    Uniform			voxel_meshDataBuffer;
     Uniform			voxel_cameraDataBuffer;
 
     // Render to screen
@@ -64,8 +51,6 @@ class VCTRenderer : public Renderer {
 
     void render_eye_quad(WGPUTextureView swapchain_view, WGPUTextureView swapchain_depth, WGPUBindGroup bind_group);
     void render_screen();
-
-    void render_3D_grid();
 
     void init_render_quad_pipeline();
     void init_render_quad_bind_groups();
@@ -103,6 +88,7 @@ public:
     void render() override;
 
     void resize_window(int width, int height) override;
+    inline Uniform* get_current_camera_uniform() { return &camera_uniform; }
 
     Texture* get_eye_texture(eEYE eye);
 

@@ -2,6 +2,8 @@
 
 #include "engine.h"
 #include "graphics/pipeline.h"
+#include "graphics/surface.h"
+
 #include <vector>
 
 class Entity;
@@ -10,6 +12,7 @@ class Entity;
 
 class VCTEngine : public Engine {
 
+	EntityMesh* floor_grid_mesh = nullptr;
 
 	// dimensions of the voxel grid: widht, height and depth
 	uint32_t grid_size;
@@ -25,6 +28,8 @@ class VCTEngine : public Engine {
 	Pipeline		voxelization_pipeline;
 	Shader*			voxelization_shader = nullptr;
 	WGPUBindGroup   voxelization_bindgroup = nullptr;
+
+	Shader*			render_voxelization_shader = nullptr;
 
 	Uniform			voxel_gridDataBuffer;
 
@@ -45,14 +50,4 @@ public:
 
 	void update(float delta_time) override;
 	void render() override;
-
-private:
-
-	struct meshData {
-
-	};
-
-	struct cameraData {
-
-	};
 };

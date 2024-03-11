@@ -9,8 +9,8 @@ struct GridData {
     _GridDepth : u32
 }
 
-@group(0) @binding(0) var<storage, read_write> _VoxelGridPoints: array<vec4f>;
-@group(0) @binding(1) var<uniform> grid_data: GridData;
+@group(0) @binding(0) var<uniform> grid_data: GridData;
+@group(0) @binding(1) var<storage, read_write> _VoxelGridPoints: array<vec4f>;
 
 @compute @workgroup_size(8, 8, 4)
 fn compute(@builtin(global_invocation_id) id: vec3<u32>) {
