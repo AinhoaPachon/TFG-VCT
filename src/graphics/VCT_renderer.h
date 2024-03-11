@@ -11,11 +11,14 @@
 
 #include "engine/VCT_engine.h"
 
+class MeshInstance3D;
+
 // Si se muestra por pantalla, esta es tu clase bebe
 
 class VCTRenderer : public Renderer {
 
     Surface         quad_surface;
+    MeshInstance3D* sphere_mesh = nullptr;
 
     struct sCameraData {
         glm::mat4x4 mvp;
@@ -25,11 +28,9 @@ class VCTRenderer : public Renderer {
     Uniform         camera_uniform;
 
     Pipeline		render_voxelization_pipeline;
-    WGPUBindGroup   render_voxelization_bindgroup = nullptr;
+    WGPUBindGroup   render_voxelization_bind_group = nullptr;
 
-    Uniform			voxel_cameraDataBuffer;
-
-    WGPUBindGroup   render_bind_group_camera = nullptr;
+    WGPUBindGroup   render_camera_bind_group = nullptr;
 
     void render_screen();
 
@@ -64,6 +65,7 @@ public:
 
     void update(float delta_time) override;
     void render() override;
+    void render_grid(WGPURenderPassEncoder render_pass);
 
     void resize_window(int width, int height) override;
     inline Uniform* get_current_camera_uniform() { return &camera_uniform; }

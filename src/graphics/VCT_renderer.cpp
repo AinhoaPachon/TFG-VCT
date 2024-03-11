@@ -6,7 +6,9 @@
 
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_wgpu.h"
+#include "framework/nodes/mesh_instance_3d.h"
 
+#include "framework/scene/parse_scene.h"
 
 VCTRenderer::VCTRenderer() : Renderer()
 {
@@ -43,7 +45,7 @@ int VCTRenderer::initialize(GLFWwindow* window, bool use_mirror_screen)
 
     std::vector<Uniform*> uniforms = { dynamic_cast<VCTRenderer*>(VCTRenderer::instance)->get_current_camera_uniform() };
 
-    render_bind_group_camera = webgpu_context.create_bind_group(uniforms, RendererStorage::get_shader("data/shaders/draw_voxel_grid.wgsl"), 1);
+    render_camera_bind_group = webgpu_context.create_bind_group(uniforms, RendererStorage::get_shader("data/shaders/draw_voxel_grid.wgsl"), 0);
 
     return 0;
 }
@@ -52,9 +54,7 @@ void VCTRenderer::clean()
 {
     Renderer::clean();
 
-    voxel_cameraDataBuffer.destroy();
-
-    wgpuBindGroupRelease(render_voxelization_bindgroup);
+    wgpuBindGroupRelease(render_voxelization_bind_group);
 
 #if defined(XR_SUPPORT) && defined(USE_MIRROR_WINDOW)
     if (is_openxr_available) {
@@ -90,6 +90,28 @@ void VCTRenderer::render()
 #endif
 
     clear_renderables();
+}
+
+void VCTRenderer::render_grid(WGPURenderPassEncoder render_pass)
+{
+    WebGPUContext* webgpu_context = VCTRenderer::instance->get_webgpu_context();
+
+    render_voxelization_pipeline.set(render_pass);
+
+    // Here you can update buffer if needed
+
+    const Surface* surface = sphere_mesh->get_surface(0);
+
+    // Set Bind groups
+    wgpuRenderPassEncoderSetBindGroup(render_pass, 0, render_camera_bind_group, 0, nullptr);
+    wgpuRenderPassEncoderSetBindGroup(render_pass, 1, render_voxelization_bind_group, 0, nullptr);
+    
+    // Set vertex buffer while encoding the render pass
+    wgpuRenderPassEncoderSetVertexBuffer(render_pass, 0, surface->get_vertex_buffer(), 0, surface->get_byte_size());
+
+    // Submit drawcalls
+    wgpuRenderPassEncoderDraw(render_pass, surface->get_vertex_count(), dynamic_cast<VCTEngine*>(VCTEngine::instance)->voxel_voxelGridPointsBuffer.buffer_size, 0, 0);
+
 }
 
 void VCTRenderer::render_screen()
@@ -142,11 +164,11 @@ void VCTRenderer::render_screen()
         // Create & fill the render pass (encoder)
         WGPURenderPassEncoder render_pass = wgpuCommandEncoderBeginRenderPass(command_encoder, &render_pass_descr);
 
-        render_opaque(render_pass, render_bind_group_camera);
+        render_opaque(render_pass, render_camera_bind_group);
 
-        render_transparent(render_pass, render_bind_group_camera);
+        render_transparent(render_pass, render_camera_bind_group);
 
-        //render_my_grid(rendera_pass, render_bind_group_camera);
+        render_grid(render_pass);
 
         wgpuRenderPassEncoderEnd(render_pass);
 
@@ -172,7 +194,6 @@ void VCTRenderer::render_screen()
 }
 
 #if defined(XR_SUPPORT)
-
 void VCTRenderer::render_xr()
 {
     xr_context.init_frame();
@@ -223,11 +244,11 @@ void VCTRenderer::render_xr()
             // Create & fill the render pass (encoder)
             WGPURenderPassEncoder render_pass = wgpuCommandEncoderBeginRenderPass(command_encoder, &render_pass_descr);
 
-            render_opaque(render_pass, render_bind_group_camera);
+            render_opaque(render_pass, render_camera_bind_group);
 
-            render_transparent(render_pass, render_bind_group_camera);
+            render_transparent(render_pass, render_camera_bind_group);
 
-            //render_my_grid(rendera_pass, render_bind_group_camera);
+            //render_my_grid(rendera_pass, render_camera_bind_group);
 
             wgpuRenderPassEncoderEnd(render_pass);
 
@@ -252,8 +273,11 @@ void VCTRenderer::render_xr()
     xr_context.end_frame();
 }
 #endif
+
 void VCTRenderer::init_render_voxelization_pipeline()
 {
+    sphere_mesh = parse_mesh("data/meshes/sphere.obj");
+
     WebGPUContext* webgpu_context = VCTRenderer::instance->get_webgpu_context();
 
     WGPUTextureFormat swapchain_format = webgpu_context->swapchain_format;
@@ -275,12 +299,8 @@ void VCTRenderer::init_render_voxelization_pipeline()
     color_target.blend = &blend_state;
     color_target.writeMask = WGPUColorWriteMask_All;
 
- 
-
-    //dynamic_cast<VCTEngine*>(VCTEngine::instance)->voxel_voxelGridPointsBuffer;
-
     std::vector<Uniform*> uniforms = { &dynamic_cast<VCTEngine*>(VCTEngine::instance)->voxel_voxelGridPointsBuffer };
-    render_voxelization_bindgroup = webgpu_context->create_bind_group(uniforms, RendererStorage::get_shader("data/shaders/draw_voxel_grid.wgsl"), 2);
+    render_voxelization_bind_group = webgpu_context->create_bind_group(uniforms, RendererStorage::get_shader("data/shaders/draw_voxel_grid.wgsl"), 1);
 
     render_voxelization_pipeline.create_render(RendererStorage::get_shader("data/shaders/draw_voxel_grid.wgsl"), color_target);
 }
