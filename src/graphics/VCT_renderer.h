@@ -7,22 +7,14 @@
 #include "graphics/texture.h"
 #include "graphics/surface.h"
 
-#include "mesh_renderer.h"
-
 #include "framework/camera/flyover_camera.h"
 
 #include "engine/VCT_engine.h"
-
-
-//#ifdef __EMSCRIPTEN__
-#define DISABLE_RAYMARCHER
-//#endif
 
 // Si se muestra por pantalla, esta es tu clase bebe
 
 class VCTRenderer : public Renderer {
 
-    MeshRenderer    mesh_renderer;
     Surface         quad_surface;
 
     struct sCameraData {
@@ -37,23 +29,9 @@ class VCTRenderer : public Renderer {
 
     Uniform			voxel_cameraDataBuffer;
 
-    // Render to screen
-    Pipeline        render_quad_pipeline = {};
-    Shader*         render_quad_shader = nullptr;
+    WGPUBindGroup   render_bind_group_camera = nullptr;
 
-    Texture         eye_textures[EYE_COUNT] = {};
-    Texture         eye_depth_textures[EYE_COUNT] = {};
-
-    Uniform         eye_render_texture_uniform[EYE_COUNT] = {};
-
-    WGPUBindGroup   eye_render_bind_group[EYE_COUNT] = {};
-    WGPUTextureView eye_depth_texture_view[EYE_COUNT] = {};
-
-    void render_eye_quad(WGPUTextureView swapchain_view, WGPUTextureView swapchain_depth, WGPUBindGroup bind_group);
     void render_screen();
-
-    void init_render_quad_pipeline();
-    void init_render_quad_bind_groups();
 
     void init_camera_bind_group();
 
@@ -89,7 +67,5 @@ public:
 
     void resize_window(int width, int height) override;
     inline Uniform* get_current_camera_uniform() { return &camera_uniform; }
-
-    Texture* get_eye_texture(eEYE eye);
 
 };

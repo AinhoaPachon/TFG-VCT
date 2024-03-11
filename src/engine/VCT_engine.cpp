@@ -1,6 +1,6 @@
 #include "VCT_engine.h"
-#include "framework/entities/entity_mesh.h"
-#include "framework/entities/entity_text.h"
+#include "framework/nodes/mesh_instance_3d.h"
+#include "framework/nodes/text.h"
 #include "framework/input.h"
 #include "framework/scene/parse_scene.h"
 #include "graphics/VCT_renderer.h"
@@ -26,7 +26,7 @@ int VCTEngine::initialize(Renderer* renderer, GLFWwindow* window, bool use_glfw,
 	init_bindings_voxelization_pipeline();
 	onCompute();*/
 
-	floor_grid_mesh = new EntityMesh();
+	floor_grid_mesh = new MeshInstance3D();
 	floor_grid_mesh->add_surface(RendererStorage::get_surface("quad"));
 	floor_grid_mesh->set_translation(glm::vec3(0.0f));
 	floor_grid_mesh->rotate(glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
@@ -36,7 +36,7 @@ int VCTEngine::initialize(Renderer* renderer, GLFWwindow* window, bool use_glfw,
 	render_voxelization_shader = RendererStorage::get_shader("data/shaders/draw_voxel_grid.wgsl");
 	//render_voxelization_shader = RendererStorage::get_shader("data/shaders/mesh_grid.wgsl");
 	grid_material.shader = render_voxelization_shader;
-	grid_material.flags |= MATERIAL_TRANSPARENT;
+	grid_material.transparency_type = ALPHA_BLEND;
 
 	floor_grid_mesh->set_surface_material_override(floor_grid_mesh->get_surface(0), grid_material);
 
@@ -45,7 +45,7 @@ int VCTEngine::initialize(Renderer* renderer, GLFWwindow* window, bool use_glfw,
 
 void VCTEngine::fill_entities()
 {
-	EntityMesh* torus = parse_mesh("data/meshes/torus/torus.obj");
+	MeshInstance3D* torus = parse_mesh("data/meshes/torus/torus.obj");
 	torus->scale(glm::vec3(0.25));
 	torus->translate(glm::vec3(1.0f, 0.0, 0.0));
 	entities.push_back(torus);

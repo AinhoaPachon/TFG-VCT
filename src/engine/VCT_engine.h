@@ -6,13 +6,14 @@
 
 #include <vector>
 
-class Entity;
+class Node;
+class MeshInstance3D;
 
 // Engine para gestion de escena
 
 class VCTEngine : public Engine {
 
-	EntityMesh* floor_grid_mesh = nullptr;
+	MeshInstance3D* floor_grid_mesh = nullptr;
 
 	// dimensions of the voxel grid: widht, height and depth
 	uint32_t grid_size;
@@ -34,7 +35,7 @@ class VCTEngine : public Engine {
 	Uniform			voxel_gridDataBuffer;
 
 public:
-	std::vector<Entity*> entities;
+	std::vector<Node*> entities;
 	Uniform			voxel_voxelGridPointsBuffer;
 
 	int initialize(Renderer* renderer, GLFWwindow* window, bool use_glfw, bool use_mirror_screen) override;
