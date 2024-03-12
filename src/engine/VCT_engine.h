@@ -8,6 +8,7 @@
 
 class Node;
 class MeshInstance3D;
+class Environment3D;
 
 // Engine para gestion de escena
 
@@ -16,7 +17,9 @@ class VCTEngine : public Engine {
 	MeshInstance3D* floor_grid_mesh = nullptr;
 
 	// dimensions of the voxel grid: widht, height and depth
-	uint32_t grid_size;
+	uint32_t grid_size = 128;
+
+	Environment3D* skybox = nullptr;
 
 	struct gridData {
 		glm::vec4 bounds_min;
@@ -33,10 +36,10 @@ class VCTEngine : public Engine {
 	Shader*			render_voxelization_shader = nullptr;
 
 	Uniform			voxel_gridDataBuffer;
+	Uniform			voxel_voxelGridPointsBuffer;
 
 public:
 	std::vector<Node*> entities;
-	Uniform			voxel_voxelGridPointsBuffer;
 
 	int initialize(Renderer* renderer, GLFWwindow* window, bool use_glfw, bool use_mirror_screen) override;
 
@@ -44,6 +47,8 @@ public:
 
 	void init_compute_voxelization();
 	void init_bindings_voxelization_pipeline();
+
+	Uniform* get_voxel_grid_points_buffer() { return &voxel_voxelGridPointsBuffer; }
 
 	void onCompute();
 

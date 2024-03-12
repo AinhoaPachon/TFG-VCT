@@ -22,9 +22,10 @@ int VCTRenderer::initialize(GLFWwindow* window, bool use_mirror_screen)
     clear_color = glm::vec4(0.22f, 0.22f, 0.22f, 1.0);
 
     init_camera_bind_group();
+    init_ibl_bind_group();
 
-    dynamic_cast<VCTEngine*>(VCTEngine::instance)->init_compute_voxelization();
     dynamic_cast<VCTEngine*>(VCTEngine::instance)->init_bindings_voxelization_pipeline();
+    dynamic_cast<VCTEngine*>(VCTEngine::instance)->init_compute_voxelization();
     dynamic_cast<VCTEngine*>(VCTEngine::instance)->onCompute();
 
     //dynamic_cast<VCTEngine*>(VCTEngine::instance)->fill_entities();
@@ -43,9 +44,9 @@ int VCTRenderer::initialize(GLFWwindow* window, bool use_mirror_screen)
     camera->set_mouse_sensitivity(0.004f);
     camera->set_speed(0.75f);
 
-    std::vector<Uniform*> uniforms = { dynamic_cast<VCTRenderer*>(VCTRenderer::instance)->get_current_camera_uniform() };
+    std::vector<Uniform*> uniforms = { &camera_uniform };
+    render_camera_bind_group = webgpu_context.create_bind_group(uniforms, RendererStorage::get_shader("data/shaders/mesh_pbr.wgsl"), 1);
 
-    render_camera_bind_group = webgpu_context.create_bind_group(uniforms, RendererStorage::get_shader("data/shaders/draw_voxel_grid.wgsl"), 0);
 
     return 0;
 }
@@ -68,7 +69,21 @@ void VCTRenderer::clean()
 
 void VCTRenderer::update(float delta_time)
 {
+#if defined(XR_SUPPORT)
+    if (is_openxr_available) {
+        xr_context.update();
+    }
+#endif
 
+    if (!is_openxr_available) {
+        const auto& io = ImGui::GetIO();
+        if (!io.WantCaptureMouse && !io.WantCaptureKeyboard) {
+            camera->update(delta_time);
+        }
+    }
+    else {
+        camera->update(delta_time);
+    }
 }
 
 void VCTRenderer::render()
@@ -103,14 +118,14 @@ void VCTRenderer::render_grid(WGPURenderPassEncoder render_pass)
     const Surface* surface = sphere_mesh->get_surface(0);
 
     // Set Bind groups
-    wgpuRenderPassEncoderSetBindGroup(render_pass, 0, render_camera_bind_group, 0, nullptr);
-    wgpuRenderPassEncoderSetBindGroup(render_pass, 1, render_voxelization_bind_group, 0, nullptr);
-    
+    wgpuRenderPassEncoderSetBindGroup(render_pass, 0, render_voxelization_bind_group, 0, nullptr);
+    wgpuRenderPassEncoderSetBindGroup(render_pass, 1, render_camera_bind_group, 0, nullptr);
+
     // Set vertex buffer while encoding the render pass
     wgpuRenderPassEncoderSetVertexBuffer(render_pass, 0, surface->get_vertex_buffer(), 0, surface->get_byte_size());
 
     // Submit drawcalls
-    wgpuRenderPassEncoderDraw(render_pass, surface->get_vertex_count(), dynamic_cast<VCTEngine*>(VCTEngine::instance)->voxel_voxelGridPointsBuffer.buffer_size, 0, 0);
+    wgpuRenderPassEncoderDraw(render_pass, surface->get_vertex_count(), 128 * 128 * 128, 0, 0);
 
 }
 
@@ -276,7 +291,7 @@ void VCTRenderer::render_xr()
 
 void VCTRenderer::init_render_voxelization_pipeline()
 {
-    sphere_mesh = parse_mesh("data/meshes/sphere.obj");
+    sphere_mesh = parse_mesh("data/meshes/cube.obj");
 
     WebGPUContext* webgpu_context = VCTRenderer::instance->get_webgpu_context();
 
@@ -299,8 +314,10 @@ void VCTRenderer::init_render_voxelization_pipeline()
     color_target.blend = &blend_state;
     color_target.writeMask = WGPUColorWriteMask_All;
 
-    std::vector<Uniform*> uniforms = { &dynamic_cast<VCTEngine*>(VCTEngine::instance)->voxel_voxelGridPointsBuffer };
-    render_voxelization_bind_group = webgpu_context->create_bind_group(uniforms, RendererStorage::get_shader("data/shaders/draw_voxel_grid.wgsl"), 1);
+    VCTEngine* engine = static_cast<VCTEngine*>(VCTEngine::instance);
+
+    std::vector<Uniform*> uniforms = { engine->get_voxel_grid_points_buffer() };
+    render_voxelization_bind_group = webgpu_context->create_bind_group(uniforms, RendererStorage::get_shader("data/shaders/draw_voxel_grid.wgsl"), 0);
 
     render_voxelization_pipeline.create_render(RendererStorage::get_shader("data/shaders/draw_voxel_grid.wgsl"), color_target);
 }

@@ -7,10 +7,14 @@
 
 @group(1) @binding(0) var<uniform> camera_data : CameraData;
 
+#ifdef USES_TEXTURE
 @group(2) @binding(0) var albedo_texture: texture_2d<f32>;
 @group(2) @binding(7) var texture_sampler : sampler;
 
 @group(3) @binding(0) var<uniform> ui_data : UIData;
+#else
+@group(2) @binding(0) var<uniform> ui_data : UIData;
+#endif
 
 @vertex
 fn vs_main(in: VertexInput) -> VertexOutput {
@@ -46,13 +50,21 @@ fn fs_main(in: VertexOutput) -> FragmentOutput {
 
     var out: FragmentOutput;
 
+#ifdef USES_TEXTURE
     var color : vec4f = textureSample(albedo_texture, texture_sampler, in.uv);
     color = pow(color, vec4f(2.2));
+#else
+    var color : vec4f = vec4f(1.0);
+#endif
 
     var selected_color = COLOR_HIGHLIGHT_DARK;
     var hightlight_color = COLOR_SECONDARY;
     var back_color = vec3f(0.01);
     var gradient_factor = pow(uvs.y, 1.25);
+
+    if(ui_data.is_button_disabled > 0.0) {
+        back_color = pow(vec3f(0.41, 0.38, 0.44), vec3f(2.2));
+    }
 
     // Assign basic color
     var lum = color.r * 0.3 + color.g * 0.59 + color.b * 0.11;
@@ -63,6 +75,7 @@ fn fs_main(in: VertexOutput) -> FragmentOutput {
 
     if(keep_colors) {
         _color = color.rgb * in.color;
+        hightlight_color = vec3f(1.0);
     }
 
     if( ui_data.is_selected > 0.0 ) {
@@ -73,7 +86,9 @@ fn fs_main(in: VertexOutput) -> FragmentOutput {
     } 
     // not selected but hovered
     else if( ui_data.is_hovered > 0.0 ) {
-        hightlight_color = mix( COLOR_TERCIARY, COLOR_HIGHLIGHT_LIGHT, gradient_factor );
+        if( !keep_colors ) {
+            hightlight_color = mix( COLOR_TERCIARY, COLOR_HIGHLIGHT_LIGHT, gradient_factor );
+        }
     }
 
     _color = select( back_color, _color * hightlight_color, color.a > 0.3 ); 

@@ -3,6 +3,8 @@
 #include "framework/nodes/text.h"
 #include "framework/input.h"
 #include "framework/scene/parse_scene.h"
+#include "framework/nodes/environment_3d.h"
+
 #include "graphics/VCT_renderer.h"
 
 #include <iostream>
@@ -12,8 +14,6 @@
 int VCTEngine::initialize(Renderer* renderer, GLFWwindow* window, bool use_glfw, bool use_mirror_screen)
 {
 	int error = Engine::initialize(renderer, window, use_glfw, use_mirror_screen);
-
-	grid_size = 128;
 
     /*
     TextEntity* text = new TextEntity("oppenheimer vs barbie");
@@ -32,13 +32,17 @@ int VCTEngine::initialize(Renderer* renderer, GLFWwindow* window, bool use_glfw,
 	floor_grid_mesh->rotate(glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 	floor_grid_mesh->scale(glm::vec3(3.f));
 
-	Material grid_material;
-	render_voxelization_shader = RendererStorage::get_shader("data/shaders/draw_voxel_grid.wgsl");
-	//render_voxelization_shader = RendererStorage::get_shader("data/shaders/mesh_grid.wgsl");
-	grid_material.shader = render_voxelization_shader;
-	grid_material.transparency_type = ALPHA_BLEND;
+	skybox = new Environment3D();
 
-	floor_grid_mesh->set_surface_material_override(floor_grid_mesh->get_surface(0), grid_material);
+	entities.push_back(skybox);
+
+	//Material grid_material;
+	//render_voxelization_shader = RendererStorage::get_shader("data/shaders/draw_voxel_grid.wgsl");
+	////render_voxelization_shader = RendererStorage::get_shader("data/shaders/mesh_grid.wgsl");
+	//grid_material.shader = render_voxelization_shader;
+	//grid_material.transparency_type = ALPHA_BLEND;
+
+	//floor_grid_mesh->set_surface_material_override(floor_grid_mesh->get_surface(0), grid_material);
 
 	return error;
 }
@@ -157,7 +161,7 @@ void VCTEngine::render()
 		entity->render();
 	}
 
-	floor_grid_mesh->render();
+	//floor_grid_mesh->render();
 
 	Engine::render();
 }
