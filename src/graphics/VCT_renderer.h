@@ -18,7 +18,6 @@ class MeshInstance3D;
 class VCTRenderer : public Renderer {
 
     Surface         quad_surface;
-    MeshInstance3D* sphere_mesh = nullptr;
 
     struct sCameraData {
         glm::mat4x4 mvp;
@@ -27,16 +26,11 @@ class VCTRenderer : public Renderer {
     } camera_data;
     Uniform         camera_uniform;
 
-    Pipeline		render_voxelization_pipeline;
-    WGPUBindGroup   render_voxelization_bind_group = nullptr;
-
     WGPUBindGroup   render_camera_bind_group = nullptr;
 
     void render_screen();
 
-    void init_camera_bind_group();
-
-    void init_render_voxelization_pipeline();
+    void init_camera_bind_group();  
 
 #if defined(XR_SUPPORT)
 

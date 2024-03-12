@@ -24,13 +24,6 @@ int VCTRenderer::initialize(GLFWwindow* window, bool use_mirror_screen)
     init_camera_bind_group();
     init_ibl_bind_group();
 
-    dynamic_cast<VCTEngine*>(VCTEngine::instance)->init_bindings_voxelization_pipeline();
-    dynamic_cast<VCTEngine*>(VCTEngine::instance)->init_compute_voxelization();
-    dynamic_cast<VCTEngine*>(VCTEngine::instance)->onCompute();
-
-    //dynamic_cast<VCTEngine*>(VCTEngine::instance)->fill_entities();
-    init_render_voxelization_pipeline();
-
 #ifdef XR_SUPPORT
     if (is_openxr_available && use_mirror_screen) {
         init_mirror_pipeline();
@@ -47,15 +40,12 @@ int VCTRenderer::initialize(GLFWwindow* window, bool use_mirror_screen)
     std::vector<Uniform*> uniforms = { &camera_uniform };
     render_camera_bind_group = webgpu_context.create_bind_group(uniforms, RendererStorage::get_shader("data/shaders/mesh_pbr.wgsl"), 1);
 
-
     return 0;
 }
 
 void VCTRenderer::clean()
 {
     Renderer::clean();
-
-    wgpuBindGroupRelease(render_voxelization_bind_group);
 
 #if defined(XR_SUPPORT) && defined(USE_MIRROR_WINDOW)
     if (is_openxr_available) {
@@ -105,28 +95,6 @@ void VCTRenderer::render()
 #endif
 
     clear_renderables();
-}
-
-void VCTRenderer::render_grid(WGPURenderPassEncoder render_pass)
-{
-    WebGPUContext* webgpu_context = VCTRenderer::instance->get_webgpu_context();
-
-    render_voxelization_pipeline.set(render_pass);
-
-    // Here you can update buffer if needed
-
-    const Surface* surface = sphere_mesh->get_surface(0);
-
-    // Set Bind groups
-    wgpuRenderPassEncoderSetBindGroup(render_pass, 0, render_voxelization_bind_group, 0, nullptr);
-    wgpuRenderPassEncoderSetBindGroup(render_pass, 1, render_camera_bind_group, 0, nullptr);
-
-    // Set vertex buffer while encoding the render pass
-    wgpuRenderPassEncoderSetVertexBuffer(render_pass, 0, surface->get_vertex_buffer(), 0, surface->get_byte_size());
-
-    // Submit drawcalls
-    wgpuRenderPassEncoderDraw(render_pass, surface->get_vertex_count(), 128 * 128 * 128, 0, 0);
-
 }
 
 void VCTRenderer::render_screen()
@@ -289,38 +257,7 @@ void VCTRenderer::render_xr()
 }
 #endif
 
-void VCTRenderer::init_render_voxelization_pipeline()
-{
-    sphere_mesh = parse_mesh("data/meshes/cube.obj");
 
-    WebGPUContext* webgpu_context = VCTRenderer::instance->get_webgpu_context();
-
-    WGPUTextureFormat swapchain_format = webgpu_context->swapchain_format;
-
-    WGPUBlendState blend_state = {};
-    blend_state.color = {
-            .operation = WGPUBlendOperation_Add,
-            .srcFactor = WGPUBlendFactor_SrcAlpha,
-            .dstFactor = WGPUBlendFactor_OneMinusSrcAlpha,
-    };
-    blend_state.alpha = {
-            .operation = WGPUBlendOperation_Add,
-            .srcFactor = WGPUBlendFactor_Zero,
-            .dstFactor = WGPUBlendFactor_One,
-    };
-
-    WGPUColorTargetState color_target = {};
-    color_target.format = swapchain_format;
-    color_target.blend = &blend_state;
-    color_target.writeMask = WGPUColorWriteMask_All;
-
-    VCTEngine* engine = static_cast<VCTEngine*>(VCTEngine::instance);
-
-    std::vector<Uniform*> uniforms = { engine->get_voxel_grid_points_buffer() };
-    render_voxelization_bind_group = webgpu_context->create_bind_group(uniforms, RendererStorage::get_shader("data/shaders/draw_voxel_grid.wgsl"), 0);
-
-    render_voxelization_pipeline.create_render(RendererStorage::get_shader("data/shaders/draw_voxel_grid.wgsl"), color_target);
-}
 
 #if defined(XR_SUPPORT) && defined(USE_MIRROR_WINDOW)
 
