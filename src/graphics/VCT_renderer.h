@@ -10,12 +10,14 @@
 #include "framework/camera/flyover_camera.h"
 
 #include "engine/VCT_engine.h"
+#include "voxelization_renderer.h"
 
 class MeshInstance3D;
 
 // Si se muestra por pantalla, esta es tu clase bebe
-
 class VCTRenderer : public Renderer {
+
+    VoxelizationRenderer voxelization_renderer;
 
     Surface         quad_surface;
 

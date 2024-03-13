@@ -13,6 +13,7 @@
 
 int VCTEngine::initialize(Renderer* renderer, GLFWwindow* window, bool use_glfw, bool use_mirror_screen)
 {
+
 	int error = Engine::initialize(renderer, window, use_glfw, use_mirror_screen);
 
     /*

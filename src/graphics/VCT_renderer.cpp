@@ -24,6 +24,8 @@ int VCTRenderer::initialize(GLFWwindow* window, bool use_mirror_screen)
     init_camera_bind_group();
     init_ibl_bind_group();
 
+    voxelization_renderer.initialize();
+
 #ifdef XR_SUPPORT
     if (is_openxr_available && use_mirror_screen) {
         init_mirror_pipeline();
@@ -151,7 +153,7 @@ void VCTRenderer::render_screen()
 
         render_transparent(render_pass, render_camera_bind_group);
 
-        render_grid(render_pass);
+        voxelization_renderer.render_grid(render_pass, render_camera_bind_group);
 
         wgpuRenderPassEncoderEnd(render_pass);
 

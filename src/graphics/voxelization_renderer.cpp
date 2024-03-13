@@ -1,10 +1,13 @@
 #include "voxelization_renderer.h"
-
+//
 #include "VCT_renderer.h"
 
 #ifdef XR_SUPPORT
 #include "dawnxr/dawnxr_internal.h"
 #endif
+
+#include "backends/imgui_impl_glfw.h"
+#include "backends/imgui_impl_wgpu.h"
 
 #include "framework/nodes/mesh_instance_3d.h"
 #include "framework/scene/parse_scene.h"
@@ -13,8 +16,14 @@ VoxelizationRenderer::VoxelizationRenderer()
 {
 }
 
-int VoxelizationRenderer::initialize(GLFWwindow* window, bool use_mirror_screen)
+int VoxelizationRenderer::initialize()
 {
+	WebGPUContext* webgpu_context = VCTRenderer::instance->get_webgpu_context();
+
+	init_bindings_voxelization_pipeline();
+	init_compute_voxelization();
+	on_compute();
+
 	init_render_voxelization_pipeline();
 
 	return 0;
@@ -42,27 +51,26 @@ void VoxelizationRenderer::init_bindings_voxelization_pipeline()
 	RenderdocCapture::start_capture_frame();
 	WebGPUContext* webgpu_context = VCTRenderer::instance->get_webgpu_context();
 
-	uint32_t grid_size = 128;
 	std::vector<glm::vec4> initial_values;
 
 	grid_data.bounds_min = glm::vec4(0.0, 0.0, 0.0, 0.0);
-	grid_data.cell_half_size = 2.0f;
+	grid_data.cell_half_size = 0.5f;
 	grid_data.grid_width = grid_data.grid_height = grid_data.grid_depth = grid_size;
 
 	voxel_gridDataBuffer.binding = 0;
 	voxel_gridDataBuffer.buffer_size = sizeof(gridData);
 	voxel_gridDataBuffer.data = webgpu_context->create_buffer(voxel_gridDataBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Uniform, &grid_data, "grid data buffer");
 
-	//for (int i = 0; i < grid_size * grid_size * grid_size; ++i) {
-	//	initial_values.push_back(glm::vec4(0.0, 0.0, 0.0, 0.0));
-	//}
+	for (int i = 0; i < grid_size * grid_size * grid_size; ++i) {
+		initial_values.push_back(glm::vec4(0.0, 0.0, 0.0, 0.0));
+	}
 
 	voxel_voxelGridPointsBuffer.binding = 1;
 	voxel_voxelGridPointsBuffer.buffer_size = sizeof(glm::vec4) * grid_size * grid_size * grid_size;
 	voxel_voxelGridPointsBuffer.data = webgpu_context->create_buffer(voxel_voxelGridPointsBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Storage, initial_values.data(), "grid points buffer");
 }
 
-void VoxelizationRenderer::onCompute()
+void VoxelizationRenderer::on_compute()
 {
 	WebGPUContext* webgpu_context = VCTRenderer::instance->get_webgpu_context();
 	WGPUQueue queue = webgpu_context->device_queue;
@@ -86,7 +94,7 @@ void VoxelizationRenderer::onCompute()
 	*/
 
 	// Ceil invocationCount / workgroupSize
-	uint32_t workgroup_size = 8 * 8 * 4;
+	uint32_t workgroup_size = 4 * 4 * 4;
 	uint32_t workgroup_count = ceil(grid_size * grid_size * grid_size / workgroup_size);
 	wgpuComputePassEncoderDispatchWorkgroups(computePass, workgroup_count, 1, 1);
 
@@ -154,7 +162,7 @@ void VoxelizationRenderer::render()
 {
 }
 
-void VoxelizationRenderer::render_grid(WGPURenderPassEncoder render_pass)
+void VoxelizationRenderer::render_grid(WGPURenderPassEncoder render_pass, WGPUBindGroup render_camera_bind_group)
 {
 	WebGPUContext* webgpu_context = VCTRenderer::instance->get_webgpu_context();
 
@@ -166,7 +174,7 @@ void VoxelizationRenderer::render_grid(WGPURenderPassEncoder render_pass)
 
 	// Set Bind groups
 	wgpuRenderPassEncoderSetBindGroup(render_pass, 0, render_voxelization_bind_group, 0, nullptr);
-	wgpuRenderPassEncoderSetBindGroup(render_pass, 1, &static_cast<VCTRenderer>(VCTRenderer::instance->get_current_camera_uniform()), 0, nullptr);
+	wgpuRenderPassEncoderSetBindGroup(render_pass, 1, render_camera_bind_group, 0, nullptr);
 
 	// Set vertex buffer while encoding the render pass
 	wgpuRenderPassEncoderSetVertexBuffer(render_pass, 0, surface->get_vertex_buffer(), 0, surface->get_byte_size());
