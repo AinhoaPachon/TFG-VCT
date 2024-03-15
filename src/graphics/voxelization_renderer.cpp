@@ -94,8 +94,9 @@ void VoxelizationRenderer::on_compute()
 	*/
 
 	// Ceil invocationCount / workgroupSize
-	uint32_t workgroup_size = 8 * 8 * 8;
-	uint32_t workgroup_count = ceil(grid_size * grid_size * grid_size / workgroup_size);
+	//uint32_t workgroup_size = 8 * 8 * 8;
+	uint32_t workgroup_count = 2;
+	//uint32_t workgroup_count = ceil(grid_size * grid_size * grid_size / workgroup_size);
 	wgpuComputePassEncoderDispatchWorkgroups(computePass, workgroup_count, 1, 1);
 
 	wgpuComputePassEncoderEnd(computePass);
