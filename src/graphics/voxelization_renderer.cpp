@@ -94,10 +94,12 @@ void VoxelizationRenderer::on_compute()
 	*/
 
 	// Ceil invocationCount / workgroupSize
-	//uint32_t workgroup_size = 8 * 8 * 4;
-	uint32_t workgroup_count = 1;
+	glm::vec3 workgroup_size = glm::vec3(4, 4, 4);
+	//uint32_t workgroup_count = 1;
 	//uint32_t workgroup_count = ceil(grid_size * grid_size * grid_size / workgroup_size);
-	wgpuComputePassEncoderDispatchWorkgroups(computePass, workgroup_count, 1, 1);
+	glm::vec3 workgroup_count = glm::vec3(ceil(grid_size / workgroup_size.x), ceil(grid_size / workgroup_size.y), ceil(grid_size / workgroup_size.z));
+	std::cout << "workgroup: " << workgroup_count.x << ", " << workgroup_count.y << ", " << workgroup_count.z << std::endl;
+	wgpuComputePassEncoderDispatchWorkgroups(computePass, workgroup_count.x, workgroup_count.y, workgroup_count.z);
 
 	wgpuComputePassEncoderEnd(computePass);
 
