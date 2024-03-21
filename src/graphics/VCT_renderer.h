@@ -61,7 +61,6 @@ public:
 
     void update(float delta_time) override;
     void render() override;
-    void render_grid(WGPURenderPassEncoder render_pass);
 
     void resize_window(int width, int height) override;
     inline Uniform* get_current_camera_uniform() { return &camera_uniform; }

@@ -10,6 +10,7 @@
 #include "framework/camera/orbit_camera.h"
 
 class MeshInstance3D;
+class Node;
 
 class VoxelizationRenderer {
 
@@ -17,7 +18,7 @@ class VoxelizationRenderer {
     MeshInstance3D* sphere_mesh = nullptr;
 
     // dimensions of the voxel grid: widht, height and depth
-    uint32_t grid_size = 160;
+    uint32_t grid_size = 40;
 
     struct gridData {
         glm::vec4 bounds_min;
@@ -54,7 +55,7 @@ public:
 
     void update(float delta_time);
     void render();
-    void render_grid(WGPURenderPassEncoder render_pass, WGPUBindGroup render_camera_bind_group);
+    void render_grid(WGPURenderPassEncoder render_pass, WGPUBindGroup render_camera_bind_group, Node* entity);
 
     void resize_window(int width, int height);
     Uniform* get_voxel_grid_points_buffer() { return &voxel_voxelGridPointsBuffer; }

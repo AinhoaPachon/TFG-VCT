@@ -18,9 +18,7 @@ VoxelizationRenderer::VoxelizationRenderer()
 
 int VoxelizationRenderer::initialize()
 {
-	WebGPUContext* webgpu_context = VCTRenderer::instance->get_webgpu_context();
-
-	init_bindings_voxelization_pipeline();
+	//init_bindings_voxelization_pipeline();
 	init_compute_voxelization();
 	on_compute();
 
@@ -53,8 +51,12 @@ void VoxelizationRenderer::init_bindings_voxelization_pipeline()
 
 	std::vector<glm::vec4> initial_values;
 
+	//static_cast<VCTEngine*>(VCTEngine::instance)->fill_entities();
+
+	//MeshInstance3D monkey = static_cast<VCTEngine*>(VCTEngine::instance)->entities[1];
+
 	grid_data.bounds_min = glm::vec4(0.0, 0.0, 0.0, 0.0);
-	grid_data.cell_half_size = 0.5f;
+	grid_data.cell_half_size = 0.25f;
 	grid_data.grid_width = grid_data.grid_height = grid_data.grid_depth = grid_size;
 
 	voxel_gridDataBuffer.binding = 0;
@@ -95,10 +97,7 @@ void VoxelizationRenderer::on_compute()
 
 	// Ceil invocationCount / workgroupSize
 	glm::vec3 workgroup_size = glm::vec3(4, 4, 4);
-	//uint32_t workgroup_count = 1;
-	//uint32_t workgroup_count = ceil(grid_size * grid_size * grid_size / workgroup_size);
 	glm::vec3 workgroup_count = glm::vec3(ceil(grid_size / workgroup_size.x), ceil(grid_size / workgroup_size.y), ceil(grid_size / workgroup_size.z));
-	std::cout << "workgroup: " << workgroup_count.x << ", " << workgroup_count.y << ", " << workgroup_count.z << std::endl;
 	wgpuComputePassEncoderDispatchWorkgroups(computePass, workgroup_count.x, workgroup_count.y, workgroup_count.z);
 
 	wgpuComputePassEncoderEnd(computePass);
@@ -165,13 +164,17 @@ void VoxelizationRenderer::render()
 {
 }
 
-void VoxelizationRenderer::render_grid(WGPURenderPassEncoder render_pass, WGPUBindGroup render_camera_bind_group)
+void VoxelizationRenderer::render_grid(WGPURenderPassEncoder render_pass, WGPUBindGroup render_camera_bind_group, Node* entity)
 {
 	WebGPUContext* webgpu_context = VCTRenderer::instance->get_webgpu_context();
 
 	render_voxelization_pipeline.set(render_pass);
 
+	grid_data.bounds_min = glm::vec4(entity->get_aabb().center - entity->get_aabb().half_size, 1.0);
+
+
 	// Here you can update buffer if needed
+	//wgpuQueueWriteBuffer(webgpu_context->device_queue, std::get<WGPUBuffer>(voxel_gridDataBuffer.data), 0, &(grid_data), sizeof(voxel_gridDataBuffer.buffer_size));
 
 	const Surface* surface = sphere_mesh->get_surface(0);
 

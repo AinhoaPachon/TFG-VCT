@@ -37,6 +37,11 @@ int VCTEngine::initialize(Renderer* renderer, GLFWwindow* window, bool use_glfw,
 
 	entities.push_back(skybox);
 
+	MeshInstance3D* monkey = parse_mesh("data/meshes/monkey.obj");
+	monkey->scale(glm::vec3(10));
+	monkey->translate(glm::vec3(0.0f, 0.0f, 0.0f));
+	entities.push_back(monkey);
+
 	//Material grid_material;
 	//render_voxelization_shader = RendererStorage::get_shader("data/shaders/draw_voxel_grid.wgsl");
 	////render_voxelization_shader = RendererStorage::get_shader("data/shaders/mesh_grid.wgsl");
@@ -50,10 +55,14 @@ int VCTEngine::initialize(Renderer* renderer, GLFWwindow* window, bool use_glfw,
 
 void VCTEngine::fill_entities()
 {
-	MeshInstance3D* torus = parse_mesh("data/meshes/torus/torus.obj");
-	torus->scale(glm::vec3(0.25));
-	torus->translate(glm::vec3(1.0f, 0.0, 0.0));
-	entities.push_back(torus);
+	skybox = new Environment3D();
+
+	entities.push_back(skybox);
+
+	MeshInstance3D* monkey = parse_mesh("data/meshes/monkey.obj");
+	monkey->scale(glm::vec3(10));
+	monkey->translate(glm::vec3(0.0f, 0.0f, 0.0f));
+	entities.push_back(monkey);
 }
 
 void VCTEngine::clean()
