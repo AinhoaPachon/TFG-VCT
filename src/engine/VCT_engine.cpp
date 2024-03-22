@@ -38,7 +38,7 @@ int VCTEngine::initialize(Renderer* renderer, GLFWwindow* window, bool use_glfw,
 	entities.push_back(skybox);
 
 	MeshInstance3D* monkey = parse_mesh("data/meshes/monkey.obj");
-	monkey->scale(glm::vec3(10));
+	monkey->scale(glm::vec3(1));
 	monkey->translate(glm::vec3(0.0f, 0.0f, 0.0f));
 	entities.push_back(monkey);
 
