@@ -18,7 +18,6 @@ VoxelizationRenderer::VoxelizationRenderer()
 
 int VoxelizationRenderer::initialize()
 {
-	//init_bindings_voxelization_pipeline();
 	init_compute_voxelization();
 	on_compute();
 
@@ -173,7 +172,7 @@ void VoxelizationRenderer::render_grid(WGPURenderPassEncoder render_pass, WGPUBi
 	grid_data.bounds_min = glm::vec4(entity->get_aabb().center - entity->get_aabb().half_size, 1.0);
 
 	// Here you can update buffer if needed
-	wgpuQueueWriteBuffer(webgpu_context->device_queue, std::get<WGPUBuffer>(voxel_gridDataBuffer.data), 0, &(grid_data), sizeof(voxel_gridDataBuffer.buffer_size));
+	//wgpuQueueWriteBuffer(webgpu_context->device_queue, std::get<WGPUBuffer>(voxel_gridDataBuffer.data), 0, &(grid_data), sizeof(voxel_gridDataBuffer.buffer_size));
 
 	const Surface* surface = sphere_mesh->get_surface(0);
 
