@@ -4,17 +4,22 @@
 #define OCTREE_DEPTH
 #define OCTREE_TOTAL_SIZE
 #define PREVIEW_PROXY_BRICKS_COUNT
+#define WORLD_SPACE_SCALE
 
-const WORLD_SPACE_SCALE = 512.0; // A texel brick is 1/512 m
-const SCALE_CONVERSION_FACTOR = WORLD_SPACE_SCALE / SDF_RESOLUTION;
+const SCULPT_TO_ATLAS_CONVERSION_FACTOR = (WORLD_SPACE_SCALE / SDF_RESOLUTION)  / (SCULPT_MAX_SIZE);
 const PIXEL_WORLD_SIZE = SCULPT_MAX_SIZE / WORLD_SPACE_SCALE;
+const PIXEL_ATLAS_SIZE = PIXEL_WORLD_SIZE * SCULPT_TO_ATLAS_CONVERSION_FACTOR;
 const BRICK_WORLD_SIZE = 8.0 * PIXEL_WORLD_SIZE;
+const BRICK_ATLAS_SIZE = 8.0 / SDF_RESOLUTION;
+const PIXEL_WORLD_SIZE_QUARTER = PIXEL_WORLD_SIZE / 2;
 const SQRT_3 = 1.73205080757;
 const BRICK_COUNT = u32(SDF_RESOLUTION / 10.0);
 const PACKED_LIST_SIZE : u32 = (MAX_EDITS_PER_EVALUATION / 4);
 const TOTAL_BRICK_COUNT = BRICK_COUNT * BRICK_COUNT * BRICK_COUNT;
 
 const MIN_HIT_DIST = 0.00005;
+
+const OCTREE_TILE_INDEX_MASK = 0x3FFFFFFFu;
 
 const FILLED_BRICK_FLAG = 0x80000000u;
 const INTERIOR_BRICK_FLAG = 0x40000000u;
@@ -47,18 +52,29 @@ struct Edit {
     //padding : vec4f
 };
 
+struct StrokeMaterial {
+    roughness       : f32,
+    metallic        : f32,
+    emissive        : f32,
+    dummy0          : f32,
+    color           : vec4f,
+    // Noise params
+    noise_params    : vec4f,
+    noise_color     : vec4f
+};
+
 struct Stroke {
     stroke_id       : u32,
     edit_count      : u32,
     primitive       : u32,
     operation       : u32,
+    dummy           : vec3f,
+    color_blend_op  : u32,
     parameters      : vec4f,
-    color           : vec4f,
-    material        : vec4f,
-    padding          : Edit, // Padding of 48 * 4 bytes
-    padding1         : Edit,
-    padding2         : Edit,
-    padding3         : Edit,
+    material        : StrokeMaterial,   // 48 bytes
+    padding         : Edit,             // Padding of (48 * 3) bytes
+    padding1        : Edit,
+    padding2        : Edit,
     edits           : array<Edit, MAX_EDITS_PER_EVALUATION>
 };
 
@@ -163,6 +179,10 @@ struct RayIntersectionInfo
 {
     intersected : u32,
     tile_pointer : u32,
+    material_roughness : f32,
+    material_metalness : f32,
+    material_albedo : vec3f,
     dummy0 : u32,
-    dummy1 : u32
+    intersection_position : vec3f,
+    dummy1 : u32,
 };

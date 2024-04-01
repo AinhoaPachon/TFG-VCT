@@ -16,9 +16,9 @@ VoxelizationRenderer::VoxelizationRenderer()
 {
 }
 
-int VoxelizationRenderer::initialize()
+int VoxelizationRenderer::initialize(Node* node)
 {
-	init_compute_voxelization();
+	init_compute_voxelization(node);
 	on_compute();
 
 	init_render_voxelization_pipeline();
@@ -26,7 +26,7 @@ int VoxelizationRenderer::initialize()
 	return 0;
 }
 
-void VoxelizationRenderer::init_compute_voxelization()
+void VoxelizationRenderer::init_compute_voxelization(Node* node)
 {
 	// Get the voxelization Shader
 	voxelization_shader = RendererStorage::get_shader("data/shaders/voxel_grid_points_fill.wgsl");
@@ -34,7 +34,7 @@ void VoxelizationRenderer::init_compute_voxelization()
 	WebGPUContext* webgpu_context = VCTRenderer::instance->get_webgpu_context();
 
 	// Set bindings for the voxelization pipeline
-	init_bindings_voxelization_pipeline();
+	init_bindings_voxelization_pipeline(node);
 
 	// set grid_data uniforms and camera_data uniforms
 	std::vector<Uniform*> uniforms = { &voxel_voxelGridPointsBuffer, &voxel_gridDataBuffer };
@@ -43,7 +43,7 @@ void VoxelizationRenderer::init_compute_voxelization()
 	voxelization_pipeline.create_compute(voxelization_shader);
 }
 
-void VoxelizationRenderer::init_bindings_voxelization_pipeline()
+void VoxelizationRenderer::init_bindings_voxelization_pipeline(Node* node)
 {
 	RenderdocCapture::start_capture_frame();
 	WebGPUContext* webgpu_context = VCTRenderer::instance->get_webgpu_context();
@@ -52,11 +52,17 @@ void VoxelizationRenderer::init_bindings_voxelization_pipeline()
 
 	//static_cast<VCTEngine*>(VCTEngine::instance)->fill_entities();
 
-	//MeshInstance3D monkey = static_cast<VCTEngine*>(VCTEngine::instance)->entities[1];
+	Node* monkey = static_cast<VCTEngine*>(VCTEngine::instance)->entities[1];
+	AABB aabb = node->get_aabb();
 
-	grid_data.bounds_min = glm::vec4(0.0, 0.0, 0.0, 0.0);
+	//grid_data.bounds_min = glm::vec4(0.0, 0.0, 0.0, 1.0);
+	grid_data.bounds_min = glm::vec4(aabb.center - aabb.half_size, 1.0);
 	grid_data.cell_half_size = 0.25f;
+	glm::vec3 grid_size_vec = aabb.half_size * glm::vec3(2.0) / glm::vec3(grid_data.cell_half_size);
 	grid_data.grid_width = grid_data.grid_height = grid_data.grid_depth = grid_size;
+	/*grid_data.grid_width = grid_size_vec.x;
+	grid_data.grid_height = grid_size_vec.y;
+	grid_data.grid_depth = grid_size_vec.z;*/
 
 	voxel_gridDataBuffer.binding = 0;
 	voxel_gridDataBuffer.buffer_size = sizeof(gridData);

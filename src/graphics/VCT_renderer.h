@@ -13,6 +13,7 @@
 #include "voxelization_renderer.h"
 
 class MeshInstance3D;
+class Node;
 
 // Si se muestra por pantalla, esta es tu clase bebe
 class VCTRenderer : public Renderer {
@@ -55,6 +56,7 @@ class VCTRenderer : public Renderer {
 public:
 
     VCTRenderer();
+    void init_voxelization(Node* node);
 
     int initialize(GLFWwindow* window, bool use_mirror_screen = false) override;
     void clean() override;

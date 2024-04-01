@@ -101,6 +101,10 @@ int main() {
     }
     std::cout << "Engine initialized" << std::endl;
 
+
+    static_cast<VCTRenderer*>(renderer)->init_voxelization(engine->entities[1]);
+    std::cout << "Voxelization Renderer initialized" << std::endl;
+
 #ifdef __EMSCRIPTEN__
     emscripten_set_main_loop_arg(
         [](void* userData) {

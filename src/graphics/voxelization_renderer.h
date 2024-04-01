@@ -37,12 +37,11 @@ class VoxelizationRenderer {
     Uniform			voxel_gridDataBuffer;
     Uniform			voxel_voxelGridPointsBuffer;
 
-
     Pipeline		render_voxelization_pipeline;
     WGPUBindGroup   render_voxelization_bind_group = nullptr;
 
-    void init_compute_voxelization();
-    void init_bindings_voxelization_pipeline();
+    void init_compute_voxelization(Node* node);
+    void init_bindings_voxelization_pipeline(Node* node);
     void on_compute();
 
     void init_render_voxelization_pipeline();
@@ -50,7 +49,7 @@ class VoxelizationRenderer {
 public:
     VoxelizationRenderer();
 
-    int initialize();
+    int initialize(Node* node);
     void clean();
 
     void update(float delta_time);

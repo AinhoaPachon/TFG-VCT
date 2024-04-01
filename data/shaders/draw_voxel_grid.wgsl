@@ -9,8 +9,8 @@ fn vs_main(in: VertexInput) -> VertexOutput {
     
     var out: VertexOutput;
     var localPos : vec4f = _VoxelGridPoints[in.instance_id];
-    out.position = camera_data.view_projection * (localPos + vec4f(in.position * 0.025, 1.0));
-    out.color = vec3f(1.0, 0.0, 0.0);
+    out.position = camera_data.view_projection * (localPos + vec4f(in.position * 0.02, 1.0));
+    out.color = vec4f(1.0, 0.0, 0.0, 1.0);
     out.normal = localPos.rgb;
     return out; 
 }
@@ -25,6 +25,6 @@ fn fs_main(in: VertexOutput) -> FragmentOutput {
     let eye : vec3f = normalize(camera_data.eye);
 
     var out : FragmentOutput;
-    out.color = vec4f(in.color, 1.0);
+    out.color = vec4f(in.color);
     return out;
 }
