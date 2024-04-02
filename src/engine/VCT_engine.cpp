@@ -16,17 +16,6 @@ int VCTEngine::initialize(Renderer* renderer, GLFWwindow* window, bool use_glfw,
 
 	int error = Engine::initialize(renderer, window, use_glfw, use_mirror_screen);
 
-    /*
-    TextEntity* text = new TextEntity("oppenheimer vs barbie");
-    text->set_material_color(colors::GREEN);
-    text->set_scale(0.25f)->generate_mesh();
-    text->translate(glm::vec3(0.0f, 0.0, -5.0));
-    entities.push_back(text);*/
-
-	/*init_compute_voxelization();
-	init_bindings_voxelization_pipeline();
-	onCompute();*/
-
 	floor_grid_mesh = new MeshInstance3D();
 	floor_grid_mesh->add_surface(RendererStorage::get_surface("quad"));
 	floor_grid_mesh->set_translation(glm::vec3(0.0f));
@@ -73,6 +62,9 @@ void VCTEngine::clean()
 void VCTEngine::update(float delta_time)
 {
     //entities[0]->rotate(0.8f * delta_time, glm::vec3(0.0f, 0.0f, 1.0f));
+	for (auto entity : entities) {
+		entity->update(delta_time);
+	}
 
 	Engine::update(delta_time);
 }
@@ -82,8 +74,6 @@ void VCTEngine::render()
 	for (auto entity : entities) {
 		entity->render();
 	}
-
-	//floor_grid_mesh->render();
 
 	Engine::render();
 }
