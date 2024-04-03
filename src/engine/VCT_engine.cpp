@@ -42,18 +42,6 @@ int VCTEngine::initialize(Renderer* renderer, GLFWwindow* window, bool use_glfw,
 	return error;
 }
 
-void VCTEngine::fill_entities()
-{
-	skybox = new Environment3D();
-
-	entities.push_back(skybox);
-
-	MeshInstance3D* monkey = parse_mesh("data/meshes/monkey.obj");
-	monkey->scale(glm::vec3(1));
-	monkey->translate(glm::vec3(0.0f, 0.0f, 0.0f));
-	entities.push_back(monkey);
-}
-
 void VCTEngine::clean()
 {
     Engine::clean();

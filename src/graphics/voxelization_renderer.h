@@ -18,7 +18,7 @@ class VoxelizationRenderer {
     MeshInstance3D* sphere_mesh = nullptr;
 
     // dimensions of the voxel grid: widht, height and depth
-    uint32_t grid_size = 40;
+    uint32_t grid_size = 30;
 
     struct gridData {
         glm::vec4 bounds_min;
@@ -36,12 +36,14 @@ class VoxelizationRenderer {
 
     Uniform			voxel_gridDataBuffer;
     Uniform			voxel_voxelGridPointsBuffer;
+    Uniform         voxel_vertexPositionBuffer;
+    Uniform         voxel_vertexCount;
 
     Pipeline		render_voxelization_pipeline;
     WGPUBindGroup   render_voxelization_bind_group = nullptr;
 
-    void init_compute_voxelization(Node* node);
-    void init_bindings_voxelization_pipeline(Node* node);
+    void init_compute_voxelization(MeshInstance3D* node);
+    void init_bindings_voxelization_pipeline(MeshInstance3D* node);
     void on_compute();
 
     void init_render_voxelization_pipeline();
@@ -49,7 +51,7 @@ class VoxelizationRenderer {
 public:
     VoxelizationRenderer();
 
-    int initialize(Node* node);
+    int initialize(MeshInstance3D* node);
     void clean();
 
     void update(float delta_time);

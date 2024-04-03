@@ -19,11 +19,9 @@ class VCTEngine : public Engine {
 	Environment3D* skybox = nullptr;
 
 public:
-	std::vector<Node*> entities;
+	std::vector<MeshInstance3D*> entities;
 
 	int initialize(Renderer* renderer, GLFWwindow* window, bool use_glfw, bool use_mirror_screen) override;
-
-	void fill_entities();
 
 	void clean() override;
 

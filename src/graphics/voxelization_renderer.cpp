@@ -16,7 +16,7 @@ VoxelizationRenderer::VoxelizationRenderer()
 {
 }
 
-int VoxelizationRenderer::initialize(Node* node)
+int VoxelizationRenderer::initialize(MeshInstance3D* node)
 {
 	init_compute_voxelization(node);
 	on_compute();
@@ -26,7 +26,7 @@ int VoxelizationRenderer::initialize(Node* node)
 	return 0;
 }
 
-void VoxelizationRenderer::init_compute_voxelization(Node* node)
+void VoxelizationRenderer::init_compute_voxelization(MeshInstance3D* node)
 {
 	// Get the voxelization Shader
 	voxelization_shader = RendererStorage::get_shader("data/shaders/voxel_grid_points_fill.wgsl");
@@ -37,27 +37,22 @@ void VoxelizationRenderer::init_compute_voxelization(Node* node)
 	init_bindings_voxelization_pipeline(node);
 
 	// set grid_data uniforms and camera_data uniforms
-	std::vector<Uniform*> uniforms = { &voxel_voxelGridPointsBuffer, &voxel_gridDataBuffer };
+	std::vector<Uniform*> uniforms = { &voxel_gridDataBuffer, &voxel_voxelGridPointsBuffer, &voxel_vertexPositionBuffer, &voxel_vertexCount };
 	voxelization_bindgroup = webgpu_context->create_bind_group(uniforms, voxelization_shader, 0);
 
 	voxelization_pipeline.create_compute(voxelization_shader);
 }
 
-void VoxelizationRenderer::init_bindings_voxelization_pipeline(Node* node)
+void VoxelizationRenderer::init_bindings_voxelization_pipeline(MeshInstance3D* node)
 {
 	RenderdocCapture::start_capture_frame();
 	WebGPUContext* webgpu_context = VCTRenderer::instance->get_webgpu_context();
 
-	std::vector<glm::vec4> initial_values;
-
-	//static_cast<VCTEngine*>(VCTEngine::instance)->fill_entities();
-
-	Node* monkey = static_cast<VCTEngine*>(VCTEngine::instance)->entities[1];
 	AABB aabb = node->get_aabb();
 
-	//grid_data.bounds_min = glm::vec4(0.0, 0.0, 0.0, 1.0);
 	grid_data.bounds_min = glm::vec4(aabb.center - aabb.half_size, 1.0);
-	grid_data.cell_half_size = 0.25f;
+	grid_data.cell_half_size = 0.05f;
+
 	glm::vec3 grid_size_vec = aabb.half_size * glm::vec3(2.0) / glm::vec3(grid_data.cell_half_size);
 	grid_data.grid_width = grid_data.grid_height = grid_data.grid_depth = grid_size;
 	/*grid_data.grid_width = grid_size_vec.x;
@@ -68,6 +63,7 @@ void VoxelizationRenderer::init_bindings_voxelization_pipeline(Node* node)
 	voxel_gridDataBuffer.buffer_size = sizeof(gridData);
 	voxel_gridDataBuffer.data = webgpu_context->create_buffer(voxel_gridDataBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Uniform, &grid_data, "grid data buffer");
 
+	std::vector<glm::vec4> initial_values;
 	for (int i = 0; i < grid_size * grid_size * grid_size; ++i) {
 		initial_values.push_back(glm::vec4(0.0, 0.0, 0.0, 0.0));
 	}
@@ -75,6 +71,23 @@ void VoxelizationRenderer::init_bindings_voxelization_pipeline(Node* node)
 	voxel_voxelGridPointsBuffer.binding = 1;
 	voxel_voxelGridPointsBuffer.buffer_size = sizeof(glm::vec4) * grid_size * grid_size * grid_size;
 	voxel_voxelGridPointsBuffer.data = webgpu_context->create_buffer(voxel_voxelGridPointsBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Storage, initial_values.data(), "grid points buffer");
+
+	Surface* surface = node->get_surface(0);
+	auto& vertices = surface->get_vertices();
+	std::vector<glm::vec3> vertex_positions;
+
+	for (int i = 0; i < vertices.size(); i++) {
+		vertex_positions.push_back(vertices[i].position);
+	}
+
+	voxel_vertexPositionBuffer.binding = 2;
+	voxel_vertexPositionBuffer.buffer_size = sizeof(glm::vec3) * vertex_positions.size();
+	voxel_vertexPositionBuffer.data = webgpu_context->create_buffer(voxel_vertexPositionBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Storage, vertex_positions.data(), "vertex positions");
+
+	int vertex_count = surface->get_vertex_count();
+	voxel_vertexCount.binding = 3;
+	voxel_vertexCount.buffer_size = 32;
+	voxel_vertexCount.data = webgpu_context->create_buffer(voxel_vertexCount.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Uniform, &vertex_count, "vertex count");
 }
 
 void VoxelizationRenderer::on_compute()
@@ -157,6 +170,8 @@ void VoxelizationRenderer::clean()
 
 	voxel_voxelGridPointsBuffer.destroy();
 	voxel_gridDataBuffer.destroy();
+	voxel_vertexPositionBuffer.destroy();
+	voxel_vertexCount.destroy();
 
 	wgpuBindGroupRelease(voxelization_bindgroup);
 }

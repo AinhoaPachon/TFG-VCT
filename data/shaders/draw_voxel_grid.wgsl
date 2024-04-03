@@ -9,8 +9,12 @@ fn vs_main(in: VertexInput) -> VertexOutput {
     
     var out: VertexOutput;
     var localPos : vec4f = _VoxelGridPoints[in.instance_id];
-    out.position = camera_data.view_projection * (localPos + vec4f(in.position * 0.02, 1.0));
+    out.position = camera_data.view_projection * vec4f(localPos.xyz + in.position * 0.005, 1.0);
     out.color = vec4f(1.0, 0.0, 0.0, 1.0);
+    if(localPos.a == 0)
+    {
+        out.color = vec4f(0.0, 0.0, 0.0, 0.0);
+    }
     out.normal = localPos.rgb;
     return out; 
 }

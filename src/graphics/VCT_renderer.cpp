@@ -100,7 +100,7 @@ void VCTRenderer::render()
     clear_renderables();
 }
 
-void VCTRenderer::init_voxelization(Node* node)
+void VCTRenderer::init_voxelization(MeshInstance3D* node)
 {
     voxelization_renderer.initialize(node);
 }
