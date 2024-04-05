@@ -18,7 +18,7 @@ fn IntersectsTriangleAabbSat(v0: vec3f, v1: vec3f, v2: vec3f, aabb_extents: vec3
 
     /*
     1. We assume AABB is at the origin
-    2. We projet the face normal onto the provided axis, with a result between -1 and 1
+    2. We project the face normal onto the provided axis, with a result between -1 and 1
     3. Take the latter number and convert it from 0 to 1. This number represents how aligned the face normal and the axis are
     4. We multiply that value by the AABB extent. The sum of all those values is r, the length of the AABB into a single axis
     */ 
@@ -35,7 +35,7 @@ fn IntersectsTriangleAabbSat(v0: vec3f, v1: vec3f, v2: vec3f, aabb_extents: vec3
     return !(max(-maxP, minP) > (r));
 }
 
-fn IntersectsTriangleAabb(tri_a: vec3f, tri_b: vec3f, tri_c: vec3f, aabb_center: vec3f, aabb_extents: vec3f) -> f32
+fn IntersectsTriangleAabb(tri_a: vec3f, tri_b: vec3f, tri_c: vec3f, aabb_center: vec3f, aabb_extents: vec3f) -> bool
 {
     // Translate the triangle to the center of the AABB
     let tri_a_dummy : vec3f = tri_a - aabb_center;
@@ -66,7 +66,7 @@ fn IntersectsTriangleAabb(tri_a: vec3f, tri_b: vec3f, tri_c: vec3f, aabb_center:
     let a22 : vec3f = vec3f(-ca.y, ca.x, 0.0);
 
     // Check the intersection with those 9 axis, the 3 AABB face normals and the triangle face normal. If any of them fails, return false.
-    /*if (!IntersectsTriangleAabbSat(tri_a_dummy, tri_b_dummy, tri_c_dummy, aabb_extents, a00) ||
+    if (!IntersectsTriangleAabbSat(tri_a_dummy, tri_b_dummy, tri_c_dummy, aabb_extents, a00) ||
         !IntersectsTriangleAabbSat(tri_a_dummy, tri_b_dummy, tri_c_dummy, aabb_extents, a01) ||
         !IntersectsTriangleAabbSat(tri_a_dummy, tri_b_dummy, tri_c_dummy, aabb_extents, a02) ||
         !IntersectsTriangleAabbSat(tri_a_dummy, tri_b_dummy, tri_c_dummy, aabb_extents, a10) ||
@@ -81,51 +81,9 @@ fn IntersectsTriangleAabb(tri_a: vec3f, tri_b: vec3f, tri_c: vec3f, aabb_center:
         !IntersectsTriangleAabbSat(tri_a_dummy, tri_b_dummy, tri_c_dummy, aabb_extents, cross(ab, bc))
     )
     {
-        return false;
+        return true;
     }
-    return true;*/
-    // SI NO INTERSECTA CON NADA DEVOLVEMOS TRUE!!!!!!
-    var w : f32 = 0.0;
-    if (!IntersectsTriangleAabbSat(tri_a_dummy, tri_b_dummy, tri_c_dummy, aabb_extents, a00)) {
-        w = 1.0;
-    }
-    else if(!IntersectsTriangleAabbSat(tri_a_dummy, tri_b_dummy, tri_c_dummy, aabb_extents, a01)) {
-        w = 2.0;
-    }
-    else if(!IntersectsTriangleAabbSat(tri_a_dummy, tri_b_dummy, tri_c_dummy, aabb_extents, a02)) {
-        w = 3.0;
-    }
-    else if(!IntersectsTriangleAabbSat(tri_a_dummy, tri_b_dummy, tri_c_dummy, aabb_extents, a10)) {
-        w = 4.0;
-    }
-    else if(!IntersectsTriangleAabbSat(tri_a_dummy, tri_b_dummy, tri_c_dummy, aabb_extents, a11)) {
-        w = 5.0;
-    }
-    else if(!IntersectsTriangleAabbSat(tri_a_dummy, tri_b_dummy, tri_c_dummy, aabb_extents, a12)) {
-        w = 6.0;
-    }
-    else if(!IntersectsTriangleAabbSat(tri_a_dummy, tri_b_dummy, tri_c_dummy, aabb_extents, a20)) {
-        w = 7.0;
-    }
-    else if(!IntersectsTriangleAabbSat(tri_a_dummy, tri_b_dummy, tri_c_dummy, aabb_extents, a21)) {
-        w = 8.0;
-    }
-    else if(!IntersectsTriangleAabbSat(tri_a_dummy, tri_b_dummy, tri_c_dummy, aabb_extents, a22)) {
-        w = 9.0;
-    }
-    else if(!IntersectsTriangleAabbSat(tri_a_dummy, tri_b_dummy, tri_c_dummy, aabb_extents, vec3f(1, 0, 0))) {
-        w = 10.0;
-    }
-    else if(!IntersectsTriangleAabbSat(tri_a_dummy, tri_b_dummy, tri_c_dummy, aabb_extents, vec3f(0, 1, 0))) {
-        w = 11.0;
-    }
-    else if(!IntersectsTriangleAabbSat(tri_a_dummy, tri_b_dummy, tri_c_dummy, aabb_extents, vec3f(0, 0, 1))) {
-        w = 12.0;
-    }
-    else if(!IntersectsTriangleAabbSat(tri_a_dummy, tri_b_dummy, tri_c_dummy, aabb_extents, cross(ab, bc))){
-        w = 13.0;
-    }
-    return w;
+    return false;
 }
 
 @group(0) @binding(0) var<uniform> grid_data: GridData;
@@ -150,33 +108,33 @@ fn compute(@builtin(global_invocation_id) id: vec3<u32>) {
     let aabb_center : vec3f = center_pos;
     let aabb_extents: vec3f = vec3f(grid_data._CellHalfSize, grid_data._CellHalfSize, grid_data._CellHalfSize);
 
-    var intersects : f32;
+    var intersects : bool;
     var tri_a : vec3f;
     var tri_b : vec3f;
     var tri_c : vec3f;
     for(var i : u32 = 0; i < _VertexCount; i = i + 3) {
-        tri_a = _MeshVertexPositions[i];
-        tri_b = _MeshVertexPositions[i + 1];
-        tri_c = _MeshVertexPositions[i + 2];
+        tri_a = _MeshVertexPositions[i].xyz;
+        tri_b = _MeshVertexPositions[i + 1].xyz;
+        tri_c = _MeshVertexPositions[i + 2].xyz;
         intersects = IntersectsTriangleAabb(tri_a, tri_b, tri_c, aabb_center, aabb_extents);
         
-        if(intersects == 0.0)
+        if(!intersects)
         {
             break;
         }
     }
-    /*
+    
     var w : f32;
-    if (intersects == 13.0) {
+    if (intersects) {
         w = 1.0;
     } else {
         w = 0.0;
     }
-    */
+    
     _VoxelGridPoints[u32(id.x + grid_data._GridWidth * (id.y + grid_data._GridHeight * id.z))] = vec4f(
                 grid_data._BoundsMin.x + f32(id.x) * cellSize,
                 grid_data._BoundsMin.y + f32(id.y) * cellSize,
-                grid_data._BoundsMin.z + f32(id.z) * cellSize, intersects);
+                grid_data._BoundsMin.z + f32(id.z) * cellSize, w);
     
 
 }

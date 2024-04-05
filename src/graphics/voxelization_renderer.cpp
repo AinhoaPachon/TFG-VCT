@@ -51,7 +51,7 @@ void VoxelizationRenderer::init_bindings_voxelization_pipeline(MeshInstance3D* n
 	AABB aabb = node->get_aabb();
 
 	grid_data.bounds_min = glm::vec4(aabb.center - aabb.half_size, 1.0);
-	grid_data.cell_half_size = 0.05f;
+	grid_data.cell_half_size = 0.01f;
 
 	glm::vec3 grid_size_vec = aabb.half_size * glm::vec3(2.0) / glm::vec3(grid_data.cell_half_size);
 	grid_data.grid_width = grid_data.grid_height = grid_data.grid_depth = grid_size;
@@ -74,10 +74,10 @@ void VoxelizationRenderer::init_bindings_voxelization_pipeline(MeshInstance3D* n
 
 	Surface* surface = node->get_surface(0);
 	auto& vertices = surface->get_vertices();
-	std::vector<glm::vec3> vertex_positions;
+	std::vector<glm::vec4> vertex_positions;
 
 	for (int i = 0; i < vertices.size(); i++) {
-		vertex_positions.push_back(vertices[i].position);
+		vertex_positions.push_back(glm::vec4(vertices[i].position, 1.0));
 	}
 
 	voxel_vertexPositionBuffer.binding = 2;

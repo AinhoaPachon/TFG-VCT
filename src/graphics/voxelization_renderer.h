@@ -18,7 +18,7 @@ class VoxelizationRenderer {
     MeshInstance3D* sphere_mesh = nullptr;
 
     // dimensions of the voxel grid: widht, height and depth
-    uint32_t grid_size = 30;
+    uint32_t grid_size = 150;
 
     struct gridData {
         glm::vec4 bounds_min;
