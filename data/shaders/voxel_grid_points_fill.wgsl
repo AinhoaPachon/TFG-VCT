@@ -32,7 +32,7 @@ fn IntersectsTriangleAabbSat(v0: vec3f, v1: vec3f, v2: vec3f, aabb_extents: vec3
 
     // Check if the line 0 to r overlaps with the line minP to maxP
     // TRUE si INTERSECCIONA
-    return !(max(-maxP, minP) > (r));
+    return !(max(-maxP, minP) > r);
 }
 
 fn IntersectsTriangleAabb(tri_a: vec3f, tri_b: vec3f, tri_c: vec3f, aabb_center: vec3f, aabb_extents: vec3f) -> bool
@@ -65,7 +65,7 @@ fn IntersectsTriangleAabb(tri_a: vec3f, tri_b: vec3f, tri_c: vec3f, aabb_center:
     let a21 : vec3f = vec3f(-bc.y, bc.x, 0.0);
     let a22 : vec3f = vec3f(-ca.y, ca.x, 0.0);
 
-    // Check the intersection with those 9 axis, the 3 AABB face normals and the triangle face normal. If any of them fails, return false.
+    // Check the intersection with those 9 axis, the 3 AABB face normals and the triangle face normal. If any of them doesn't intersect, return true.
     if (!IntersectsTriangleAabbSat(tri_a_dummy, tri_b_dummy, tri_c_dummy, aabb_extents, a00) ||
         !IntersectsTriangleAabbSat(tri_a_dummy, tri_b_dummy, tri_c_dummy, aabb_extents, a01) ||
         !IntersectsTriangleAabbSat(tri_a_dummy, tri_b_dummy, tri_c_dummy, aabb_extents, a02) ||
@@ -112,12 +112,14 @@ fn compute(@builtin(global_invocation_id) id: vec3<u32>) {
     var tri_a : vec3f;
     var tri_b : vec3f;
     var tri_c : vec3f;
+
     for(var i : u32 = 0; i < _VertexCount; i = i + 3) {
         tri_a = _MeshVertexPositions[i].xyz;
         tri_b = _MeshVertexPositions[i + 1].xyz;
         tri_c = _MeshVertexPositions[i + 2].xyz;
         intersects = IntersectsTriangleAabb(tri_a, tri_b, tri_c, aabb_center, aabb_extents);
         
+        // Break loop when we find a triangle that intersects with the current voxel
         if(!intersects)
         {
             break;
@@ -125,12 +127,13 @@ fn compute(@builtin(global_invocation_id) id: vec3<u32>) {
     }
     
     var w : f32;
-    if (intersects) {
+    // 1.0 if intersects, 0.0 if doesn't
+    if (!intersects) {
         w = 1.0;
     } else {
         w = 0.0;
+        // _VoxelGridPoints[u32(id.x + grid_data._GridWidth * (id.y + grid_data._GridHeight * id.z))] = vec4f(0.0, 0.0, 0.0, 1.0);
     }
-    
     _VoxelGridPoints[u32(id.x + grid_data._GridWidth * (id.y + grid_data._GridHeight * id.z))] = vec4f(
                 grid_data._BoundsMin.x + f32(id.x) * cellSize,
                 grid_data._BoundsMin.y + f32(id.y) * cellSize,

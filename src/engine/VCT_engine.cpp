@@ -49,12 +49,13 @@ void VCTEngine::clean()
 
 void VCTEngine::update(float delta_time)
 {
+	Engine::update(delta_time);
+
     //entities[0]->rotate(0.8f * delta_time, glm::vec3(0.0f, 0.0f, 1.0f));
 	for (auto entity : entities) {
 		entity->update(delta_time);
 	}
 
-	Engine::update(delta_time);
 }
 
 void VCTEngine::render()
