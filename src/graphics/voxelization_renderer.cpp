@@ -120,7 +120,7 @@ void VoxelizationRenderer::on_compute()
 
 	// Ceil invocationCount / workgroupSize
 	glm::vec3 workgroup_size = glm::vec3(4, 4, 4);
-	glm::vec3 workgroup_count = glm::vec3(ceil(grid_size / workgroup_size.x), ceil(grid_size / workgroup_size.y), ceil(grid_size / workgroup_size.z));
+	glm::vec3 workgroup_count = glm::vec3(ceil(grid_data.grid_width / workgroup_size.x), ceil(grid_data.grid_height / workgroup_size.y), ceil(grid_data.grid_depth / workgroup_size.z));
 	wgpuComputePassEncoderDispatchWorkgroups(computePass, workgroup_count.x, workgroup_count.y, workgroup_count.z);
 
 	wgpuComputePassEncoderEnd(computePass);
@@ -211,7 +211,7 @@ void VoxelizationRenderer::render_grid(WGPURenderPassEncoder render_pass, WGPUBi
 	wgpuRenderPassEncoderSetVertexBuffer(render_pass, 0, surface->get_vertex_buffer(), 0, surface->get_byte_size());
 
 	// Submit drawcalls
-	wgpuRenderPassEncoderDraw(render_pass, surface->get_vertex_count(), grid_size * grid_size * grid_size, 0, 0);
+	wgpuRenderPassEncoderDraw(render_pass, surface->get_vertex_count(), grid_data.grid_width * grid_data.grid_height * grid_data.grid_depth, 0, 0);
 
 }
 

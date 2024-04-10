@@ -19,7 +19,7 @@ int VCTEngine::initialize(Renderer* renderer, GLFWwindow* window, bool use_glfw,
 	floor_grid_mesh = new MeshInstance3D();
 	floor_grid_mesh->add_surface(RendererStorage::get_surface("quad"));
 	floor_grid_mesh->set_translation(glm::vec3(0.0f));
-	floor_grid_mesh->rotate(glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+	floor_grid_mesh->rotate(glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 0.0f));
 	floor_grid_mesh->scale(glm::vec3(3.f));
 
 	skybox = new Environment3D();

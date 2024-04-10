@@ -120,8 +120,7 @@ fn compute(@builtin(global_invocation_id) id: vec3<u32>) {
         intersects = IntersectsTriangleAabb(tri_a, tri_b, tri_c, aabb_center, aabb_extents);
         
         // Break loop when we find a triangle that intersects with the current voxel
-        if(!intersects)
-        {
+        if(!intersects) {
             break;
         }
     }
@@ -132,12 +131,10 @@ fn compute(@builtin(global_invocation_id) id: vec3<u32>) {
         w = 1.0;
     } else {
         w = 0.0;
-        // _VoxelGridPoints[u32(id.x + grid_data._GridWidth * (id.y + grid_data._GridHeight * id.z))] = vec4f(0.0, 0.0, 0.0, 1.0);
     }
     _VoxelGridPoints[u32(id.x + grid_data._GridWidth * (id.y + grid_data._GridHeight * id.z))] = vec4f(
                 grid_data._BoundsMin.x + f32(id.x) * cellSize,
                 grid_data._BoundsMin.y + f32(id.y) * cellSize,
                 grid_data._BoundsMin.z + f32(id.z) * cellSize, w);
-    
 
 }
