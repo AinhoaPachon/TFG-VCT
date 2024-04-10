@@ -51,7 +51,7 @@ void VoxelizationRenderer::init_bindings_voxelization_pipeline(MeshInstance3D* n
 	AABB aabb = node->get_aabb();
 
 	grid_data.bounds_min = glm::vec4(aabb.center - aabb.half_size, 1.0);
-	grid_data.cell_half_size = 0.01f;
+	grid_data.cell_half_size = 0.001f;
 
 	glm::vec3 grid_size_vec = ceil(aabb.half_size / glm::vec3(grid_data.cell_half_size));
 	//grid_data.grid_width = grid_data.grid_height = grid_data.grid_depth = grid_size;
@@ -163,7 +163,13 @@ void VoxelizationRenderer::init_render_voxelization_pipeline()
 
 	sphere_mesh->get_surface(0)->set_material_cull_type(CULL_NONE);
 
-	std::vector<Uniform*> uniforms = { get_voxel_grid_points_buffer() };
+	float cell_size = grid_data.cell_half_size * 2.0;
+
+	voxel_cell_size.binding = 2;
+	voxel_cell_size.buffer_size = sizeof(float);
+	voxel_cell_size.data = webgpu_context->create_buffer(voxel_cell_size.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Uniform, &cell_size, "cell size");
+
+	std::vector<Uniform*> uniforms = { get_voxel_grid_points_buffer(), &voxel_cell_size };
 	render_voxelization_bind_group = webgpu_context->create_bind_group(uniforms, RendererStorage::get_shader("data/shaders/draw_voxel_grid.wgsl"), 0);
 
 	render_voxelization_pipeline.create_render(RendererStorage::get_shader("data/shaders/draw_voxel_grid.wgsl"), color_target);
@@ -178,6 +184,7 @@ void VoxelizationRenderer::clean()
 	voxel_gridDataBuffer.destroy();
 	voxel_vertexPositionBuffer.destroy();
 	voxel_vertexCount.destroy();
+	voxel_cell_size.destroy();
 
 	wgpuBindGroupRelease(voxelization_bindgroup);
 }

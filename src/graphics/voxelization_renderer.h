@@ -35,6 +35,7 @@ class VoxelizationRenderer {
     Uniform			voxel_voxelGridPointsBuffer;
     Uniform         voxel_vertexPositionBuffer;
     Uniform         voxel_vertexCount;
+    Uniform         voxel_cell_size;
 
     Pipeline		render_voxelization_pipeline;
     WGPUBindGroup   render_voxelization_bind_group = nullptr;
