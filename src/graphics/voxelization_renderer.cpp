@@ -54,7 +54,6 @@ void VoxelizationRenderer::init_bindings_voxelization_pipeline(MeshInstance3D* n
 	grid_data.cell_half_size = 0.001f;
 
 	glm::vec3 grid_size_vec = ceil(aabb.half_size / glm::vec3(grid_data.cell_half_size));
-	//grid_data.grid_width = grid_data.grid_height = grid_data.grid_depth = grid_size;
 	grid_data.grid_width = grid_size_vec.x;
 	grid_data.grid_height = grid_size_vec.y;
 	grid_data.grid_depth = grid_size_vec.z;
@@ -68,12 +67,7 @@ void VoxelizationRenderer::init_bindings_voxelization_pipeline(MeshInstance3D* n
 		initial_values.push_back(glm::vec4(0.0, 0.0, 0.0, 0.0));
 	}
 
-	/*for (int i = 0; i < grid_size * grid_size * grid_size; ++i) {
-		initial_values.push_back(glm::vec4(0.0, 0.0, 0.0, 0.0));
-	}*/
-
 	voxel_voxelGridPointsBuffer.binding = 1;
-	//voxel_voxelGridPointsBuffer.buffer_size = sizeof(glm::vec4) * grid_size * grid_size * grid_size;
 	voxel_voxelGridPointsBuffer.buffer_size = sizeof(glm::vec4) * grid_data.grid_width * grid_data.grid_height * grid_data.grid_depth;
 	voxel_voxelGridPointsBuffer.data = webgpu_context->create_buffer(voxel_voxelGridPointsBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Storage, initial_values.data(), "grid points buffer");
 
