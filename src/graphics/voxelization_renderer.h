@@ -25,6 +25,10 @@ class VoxelizationRenderer {
         int grid_depth;
     } grid_data;
 
+    struct voxelRepresentation {
+        glm::mat4x4 model;
+    } voxel_representation;
+
     Pipeline		voxelization_pipeline;
     Shader*         voxelization_shader = nullptr;
     WGPUBindGroup   voxelization_bindgroup = nullptr;
@@ -35,6 +39,7 @@ class VoxelizationRenderer {
     Uniform			voxel_voxelGridPointsBuffer;
     Uniform         voxel_vertexPositionBuffer;
     Uniform         voxel_vertexCount;
+    Uniform         voxel_representationBuffer;
     Uniform         voxel_cell_size;
 
     Pipeline		render_voxelization_pipeline;

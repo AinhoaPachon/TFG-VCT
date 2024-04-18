@@ -37,7 +37,7 @@ void VoxelizationRenderer::init_compute_voxelization(MeshInstance3D* node)
 	init_bindings_voxelization_pipeline(node);
 
 	// set grid_data uniforms and camera_data uniforms
-	std::vector<Uniform*> uniforms = { &voxel_gridDataBuffer, &voxel_voxelGridPointsBuffer, &voxel_vertexPositionBuffer, &voxel_vertexCount };
+	std::vector<Uniform*> uniforms = { &voxel_gridDataBuffer, &voxel_voxelGridPointsBuffer, &voxel_vertexPositionBuffer, &voxel_vertexCount, &voxel_representationBuffer };
 	voxelization_bindgroup = webgpu_context->create_bind_group(uniforms, voxelization_shader, 0);
 
 	voxelization_pipeline.create_compute(voxelization_shader);
@@ -51,7 +51,7 @@ void VoxelizationRenderer::init_bindings_voxelization_pipeline(MeshInstance3D* n
 	AABB aabb = node->get_aabb();
 
 	grid_data.bounds_min = glm::vec4(aabb.center - aabb.half_size, 1.0);
-	grid_data.cell_half_size = 0.001f;
+	grid_data.cell_half_size = 0.05f;
 
 	glm::vec3 grid_size_vec = ceil(aabb.half_size / glm::vec3(grid_data.cell_half_size));
 	grid_data.grid_width = grid_size_vec.x;
@@ -87,6 +87,11 @@ void VoxelizationRenderer::init_bindings_voxelization_pipeline(MeshInstance3D* n
 	voxel_vertexCount.binding = 3;
 	voxel_vertexCount.buffer_size = 32;
 	voxel_vertexCount.data = webgpu_context->create_buffer(voxel_vertexCount.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Uniform, &vertex_count, "vertex count");
+
+	voxel_representation.model = node->get_model();
+	voxel_representationBuffer.binding = 4;
+	voxel_representationBuffer.buffer_size = sizeof(voxelRepresentation);
+	voxel_representationBuffer.data = webgpu_context->create_buffer(voxel_representationBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Uniform, &voxel_representation, "voxel representation data");
 }
 
 void VoxelizationRenderer::on_compute()
@@ -109,8 +114,7 @@ void VoxelizationRenderer::on_compute()
 	/*
 	Instead of providing a single number of concurrent calls, we express this number as a grid (sipatch) of x * y * z workgroups (groups of calls).
 	Each workgroup is a little block of w * h * d threads, each of which runs the entry point.
-	w * h * d should be multiple of 32
-	*/
+	w * h * d should be multiple of 32 */
 
 	// Ceil invocationCount / workgroupSize
 	glm::vec3 workgroup_size = glm::vec3(4, 4, 4);
@@ -178,6 +182,7 @@ void VoxelizationRenderer::clean()
 	voxel_gridDataBuffer.destroy();
 	voxel_vertexPositionBuffer.destroy();
 	voxel_vertexCount.destroy();
+	voxel_representationBuffer.destroy();
 	voxel_cell_size.destroy();
 
 	wgpuBindGroupRelease(voxelization_bindgroup);
@@ -196,8 +201,6 @@ void VoxelizationRenderer::render_grid(WGPURenderPassEncoder render_pass, WGPUBi
 	WebGPUContext* webgpu_context = VCTRenderer::instance->get_webgpu_context();
 
 	render_voxelization_pipeline.set(render_pass);
-
-	grid_data.bounds_min = glm::vec4(entity->get_aabb().center - entity->get_aabb().half_size, 1.0);
 
 	// Here you can update buffer if needed
 	//wgpuQueueWriteBuffer(webgpu_context->device_queue, std::get<WGPUBuffer>(voxel_gridDataBuffer.data), 0, &(grid_data), sizeof(voxel_gridDataBuffer.buffer_size));

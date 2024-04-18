@@ -9,6 +9,10 @@ struct GridData {
     _GridDepth : u32
 }
 
+struct VoxelRepresentation {
+    model : mat4x4f
+}
+
 fn IntersectsTriangleAabbSat(v0: vec3f, v1: vec3f, v2: vec3f, aabb_extents: vec3f, axis: vec3f) -> bool
 {
     // Project each triangle vertex onto the axis
@@ -90,6 +94,7 @@ fn IntersectsTriangleAabb(tri_a: vec3f, tri_b: vec3f, tri_c: vec3f, aabb_center:
 @group(0) @binding(1) var<storage, read_write> _VoxelGridPoints: array<vec4f>;
 @group(0) @binding(2) var<storage, read_write> _MeshVertexPositions: array<vec3f>;
 @group(0) @binding(3) var<uniform> _VertexCount: u32;
+@group(0) @binding(4) var<uniform> _VoxelRepresentation: VoxelRepresentation;
 
 @compute @workgroup_size(4, 4, 4)
 fn compute(@builtin(global_invocation_id) id: vec3<u32>) {
@@ -132,7 +137,11 @@ fn compute(@builtin(global_invocation_id) id: vec3<u32>) {
     } else {
         w = 0.0;
     }
+
+    var center_dum : vec4f = vec4f(center_pos, 1.0);
+    var center_global : vec4f = _VoxelRepresentation.model * center_dum;
+
     _VoxelGridPoints[u32(id.x + grid_data._GridWidth * (id.y + grid_data._GridHeight * id.z))] = vec4f(
-                center_pos, w);
+                center_global.xyz, w);
 
 }
