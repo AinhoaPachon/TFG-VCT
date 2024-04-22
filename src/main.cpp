@@ -70,8 +70,8 @@ int main() {
 
 #elif defined(XR_SUPPORT)
     // Keep XR aspect ratio
-    int screen_width = 992;
-    int screen_height = 1000;
+    int screen_width = 1280;
+    int screen_height = 720;
 #else
     int screen_width = 1280;
     int screen_height = 720;
@@ -101,7 +101,7 @@ int main() {
     }
     std::cout << "Engine initialized" << std::endl;
 
-
+    
     static_cast<VCTRenderer*>(renderer)->init_voxelization(engine->entities[1]);
     std::cout << "Voxelization Renderer initialized" << std::endl;
 

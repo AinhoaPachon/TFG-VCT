@@ -142,13 +142,13 @@ void VoxelizationRenderer::init_render_voxelization_pipeline()
 
 	WGPUTextureFormat swapchain_format = webgpu_context->swapchain_format;
 
-	WGPUBlendState blend_state = {};
-	blend_state.color = {
+	WGPUBlendState* blend_state = new WGPUBlendState();
+	blend_state->color = {
 			.operation = WGPUBlendOperation_Add,
 			.srcFactor = WGPUBlendFactor_SrcAlpha,
 			.dstFactor = WGPUBlendFactor_OneMinusSrcAlpha,
 	};
-	blend_state.alpha = {
+	blend_state->alpha = {
 			.operation = WGPUBlendOperation_Add,
 			.srcFactor = WGPUBlendFactor_Zero,
 			.dstFactor = WGPUBlendFactor_One,
@@ -156,10 +156,11 @@ void VoxelizationRenderer::init_render_voxelization_pipeline()
 
 	WGPUColorTargetState color_target = {};
 	color_target.format = swapchain_format;
-	color_target.blend = &blend_state;
+	color_target.blend = blend_state;
 	color_target.writeMask = WGPUColorWriteMask_All;
 
 	sphere_mesh->get_surface(0)->set_material_cull_type(CULL_NONE);
+	sphere_mesh->get_surface(0)->set_material_transparency_type(ALPHA_BLEND);
 
 	float cell_size = grid_data.cell_half_size * 2.0;
 

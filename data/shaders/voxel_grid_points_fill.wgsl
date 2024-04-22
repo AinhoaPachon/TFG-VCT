@@ -85,9 +85,9 @@ fn IntersectsTriangleAabb(tri_a: vec3f, tri_b: vec3f, tri_c: vec3f, aabb_center:
         !IntersectsTriangleAabbSat(tri_a_dummy, tri_b_dummy, tri_c_dummy, aabb_extents, cross(ab, bc))
     )
     {
-        return true;
+        return false;
     }
-    return false;
+    return true;
 }
 
 @group(0) @binding(0) var<uniform> grid_data: GridData;
@@ -111,7 +111,7 @@ fn compute(@builtin(global_invocation_id) id: vec3<u32>) {
         f32(id.z) * cellSize + grid_data._CellHalfSize + grid_data._BoundsMin.z);
 
     let aabb_center : vec3f = center_pos;
-    let aabb_extents: vec3f = vec3f(grid_data._CellHalfSize, grid_data._CellHalfSize, grid_data._CellHalfSize);
+    let aabb_extents: vec3f = vec3f(grid_data._CellHalfSize);
 
     var intersects : bool;
     var tri_a : vec3f;
@@ -125,14 +125,14 @@ fn compute(@builtin(global_invocation_id) id: vec3<u32>) {
         intersects = IntersectsTriangleAabb(tri_a, tri_b, tri_c, aabb_center, aabb_extents);
         
         // Break loop when we find a triangle that intersects with the current voxel
-        if(!intersects) {
+        if(intersects) {
             break;
         }
     }
     
     var w : f32;
     // 1.0 if intersects, 0.0 if doesn't
-    if (!intersects) {
+    if (intersects) {
         w = 1.0;
     } else {
         w = 0.0;
@@ -141,7 +141,13 @@ fn compute(@builtin(global_invocation_id) id: vec3<u32>) {
     var center_dum : vec4f = vec4f(center_pos, 1.0);
     var center_global : vec4f = _VoxelRepresentation.model * center_dum;
 
-    _VoxelGridPoints[u32(id.x + grid_data._GridWidth * (id.y + grid_data._GridHeight * id.z))] = vec4f(
+    if (id.x == 1 && id.y == 1 && id.z == 1) {
+        _VoxelGridPoints[u32(id.x + grid_data._GridWidth * (id.y + grid_data._GridHeight * id.z))] = vec4f(
+                center_global.xyz, 0.5);
+    } else {
+        _VoxelGridPoints[u32(id.x + grid_data._GridWidth * (id.y + grid_data._GridHeight * id.z))] = vec4f(
                 center_global.xyz, w);
+    }
+
 
 }
