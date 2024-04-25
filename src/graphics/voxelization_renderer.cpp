@@ -16,9 +16,9 @@ VoxelizationRenderer::VoxelizationRenderer()
 {
 }
 
-int VoxelizationRenderer::initialize(MeshInstance3D* node)
+int VoxelizationRenderer::initialize(std::vector<MeshInstance3D*> nodes)
 {
-	init_compute_voxelization(node);
+	init_compute_voxelization(nodes);
 	on_compute();
 
 	init_render_voxelization_pipeline();
@@ -26,7 +26,7 @@ int VoxelizationRenderer::initialize(MeshInstance3D* node)
 	return 0;
 }
 
-void VoxelizationRenderer::init_compute_voxelization(MeshInstance3D* node)
+void VoxelizationRenderer::init_compute_voxelization(std::vector<MeshInstance3D*> nodes)
 {
 	// Get the voxelization Shader
 	voxelization_shader = RendererStorage::get_shader("data/shaders/voxel_grid_points_fill.wgsl");
@@ -34,64 +34,119 @@ void VoxelizationRenderer::init_compute_voxelization(MeshInstance3D* node)
 	WebGPUContext* webgpu_context = VCTRenderer::instance->get_webgpu_context();
 
 	// Set bindings for the voxelization pipeline
-	init_bindings_voxelization_pipeline(node);
-
-	// set grid_data uniforms and camera_data uniforms
-	std::vector<Uniform*> uniforms = { &voxel_gridDataBuffer, &voxel_voxelGridPointsBuffer, &voxel_vertexPositionBuffer, &voxel_vertexCount, &voxel_representationBuffer };
-	voxelization_bindgroup = webgpu_context->create_bind_group(uniforms, voxelization_shader, 0);
+	init_bindings_voxelization_pipeline(nodes);
 
 	voxelization_pipeline.create_compute(voxelization_shader);
 }
 
-void VoxelizationRenderer::init_bindings_voxelization_pipeline(MeshInstance3D* node)
+void VoxelizationRenderer::init_bindings_voxelization_pipeline(std::vector<MeshInstance3D*> nodes)
 {
 	RenderdocCapture::start_capture_frame();
 	WebGPUContext* webgpu_context = VCTRenderer::instance->get_webgpu_context();
 
-	AABB aabb = node->get_aabb();
+	AABB scene_aabb;
+	AABB aabb;
+	std::vector<glm::vec4> vertex_positions;
+	std::vector<glm::mat4x4> models;
+	Surface* surface;
+	std::vector<int> vertex_count;
 
-	grid_data.bounds_min = glm::vec4(aabb.center - aabb.half_size, 1.0);
+	// Bounds of the scene bounding box
+	glm::vec3 min_pos = { FLT_MAX, FLT_MAX, FLT_MAX };
+	glm::vec3 max_pos = { -FLT_MAX, -FLT_MAX, -FLT_MAX };
+	
+	// Bounds of the current bounding box
+	glm::vec3 aabb_min;
+	glm::vec3 aabb_max;
+
+	for (auto node : nodes) {
+		// Scene bounding box
+		aabb = node->get_aabb();
+
+		aabb_min = aabb.center - aabb.half_size;
+		aabb_max = aabb.center + aabb.half_size;
+
+		glm::bvec3 less_than = glm::lessThan(aabb_min, min_pos);
+
+		if (less_than.x) {
+			min_pos.x = aabb_min.x;
+		}
+		if (less_than.y) {
+			min_pos.y = aabb_min.y;
+		}
+		if (less_than.z) {
+			min_pos.z = aabb_min.z;
+		}
+
+		glm::bvec3 greater_than = glm::greaterThan(aabb_max, max_pos);
+
+		if (greater_than.x) {
+			max_pos.x = aabb_max.x;
+		}
+		if (greater_than.y) {
+			max_pos.y = aabb_max.y;
+		}
+		if (greater_than.z) {
+			max_pos.z = aabb_max.z;
+		}
+
+		// Get the vertices from the node
+		surface = node->get_surface(0);
+		auto& vertices = surface->get_vertices();
+
+		for (int i = 0; i < vertices.size(); i++) {
+			vertex_positions.push_back(glm::vec4(vertices[i].position, 1.0));
+		}
+
+		// Get the amount of vertices a node has
+		vertex_count.push_back(surface->get_vertex_count());
+
+		// Get the model
+		models.push_back(node->get_model());
+	}
+	scene_aabb.half_size = (max_pos - min_pos) * glm::vec3(0.5);
+	scene_aabb.center = max_pos - scene_aabb.half_size;
+
+	grid_data.bounds_min = glm::vec4(scene_aabb.center - scene_aabb.half_size, 1.0);
 	grid_data.cell_half_size = 0.05f;
 
-	glm::vec3 grid_size_vec = ceil(aabb.half_size / glm::vec3(grid_data.cell_half_size));
+	glm::vec3 grid_size_vec = ceil(scene_aabb.half_size / glm::vec3(grid_data.cell_half_size));
 	grid_data.grid_width = grid_size_vec.x;
 	grid_data.grid_height = grid_size_vec.y;
 	grid_data.grid_depth = grid_size_vec.z;
-
-	voxel_gridDataBuffer.binding = 0;
-	voxel_gridDataBuffer.buffer_size = sizeof(gridData);
-	voxel_gridDataBuffer.data = webgpu_context->create_buffer(voxel_gridDataBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Uniform, &grid_data, "grid data buffer");
 
 	std::vector<glm::vec4> initial_values;
 	for (int i = 0; i < grid_data.grid_width * grid_data.grid_height * grid_data.grid_depth; ++i) {
 		initial_values.push_back(glm::vec4(0.0, 0.0, 0.0, 0.0));
 	}
 
+	// Information about the grid, such as its size, the translation or the cell size
+	voxel_gridDataBuffer.binding = 0;
+	voxel_gridDataBuffer.buffer_size = sizeof(gridData);
+	voxel_gridDataBuffer.data = webgpu_context->create_buffer(voxel_gridDataBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Uniform, &grid_data, "grid data buffer");
+
+	// Positions of the voxels in the grid
 	voxel_voxelGridPointsBuffer.binding = 1;
 	voxel_voxelGridPointsBuffer.buffer_size = sizeof(glm::vec4) * grid_data.grid_width * grid_data.grid_height * grid_data.grid_depth;
 	voxel_voxelGridPointsBuffer.data = webgpu_context->create_buffer(voxel_voxelGridPointsBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Storage, initial_values.data(), "grid points buffer");
 
-	Surface* surface = node->get_surface(0);
-	auto& vertices = surface->get_vertices();
-	std::vector<glm::vec4> vertex_positions;
-
-	for (int i = 0; i < vertices.size(); i++) {
-		vertex_positions.push_back(glm::vec4(vertices[i].position, 1.0));
-	}
-
+	// Positions of the vertices
 	voxel_vertexPositionBuffer.binding = 2;
-	voxel_vertexPositionBuffer.buffer_size = sizeof(glm::vec3) * vertex_positions.size();
+	voxel_vertexPositionBuffer.buffer_size = sizeof(glm::vec4) * vertex_positions.size();
 	voxel_vertexPositionBuffer.data = webgpu_context->create_buffer(voxel_vertexPositionBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Storage, vertex_positions.data(), "vertex positions");
 
-	int vertex_count = surface->get_vertex_count();
+	// Amount of vertices in each entity
 	voxel_vertexCount.binding = 3;
 	voxel_vertexCount.buffer_size = 32;
 	voxel_vertexCount.data = webgpu_context->create_buffer(voxel_vertexCount.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Uniform, &vertex_count, "vertex count");
 
-	voxel_representation.model = node->get_model();
+	// Models of the nodes
 	voxel_representationBuffer.binding = 4;
 	voxel_representationBuffer.buffer_size = sizeof(voxelRepresentation);
 	voxel_representationBuffer.data = webgpu_context->create_buffer(voxel_representationBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Uniform, &voxel_representation, "voxel representation data");
+	
+	std::vector<Uniform*> uniforms = { &voxel_gridDataBuffer, &voxel_voxelGridPointsBuffer, &voxel_vertexPositionBuffer, &voxel_vertexCount, &voxel_representationBuffer };
+	voxelization_bindgroup = webgpu_context->create_bind_group(uniforms, voxelization_shader, 0);
 }
 
 void VoxelizationRenderer::on_compute()
@@ -197,7 +252,7 @@ void VoxelizationRenderer::render()
 {
 }
 
-void VoxelizationRenderer::render_grid(WGPURenderPassEncoder render_pass, WGPUBindGroup render_camera_bind_group, Node* entity)
+void VoxelizationRenderer::render_grid(WGPURenderPassEncoder render_pass, WGPUBindGroup render_camera_bind_group)
 {
 	WebGPUContext* webgpu_context = VCTRenderer::instance->get_webgpu_context();
 

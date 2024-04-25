@@ -45,8 +45,8 @@ class VoxelizationRenderer {
     Pipeline		render_voxelization_pipeline;
     WGPUBindGroup   render_voxelization_bind_group = nullptr;
 
-    void init_compute_voxelization(MeshInstance3D* node);
-    void init_bindings_voxelization_pipeline(MeshInstance3D* node);
+    void init_compute_voxelization(std::vector<MeshInstance3D*> nodes);
+    void init_bindings_voxelization_pipeline(std::vector<MeshInstance3D*> nodes);
     void on_compute();
 
     void init_render_voxelization_pipeline();
@@ -54,12 +54,12 @@ class VoxelizationRenderer {
 public:
     VoxelizationRenderer();
 
-    int initialize(MeshInstance3D* node);
+    int initialize(std::vector<MeshInstance3D*> nodes);
     void clean();
 
     void update(float delta_time);
     void render();
-    void render_grid(WGPURenderPassEncoder render_pass, WGPUBindGroup render_camera_bind_group, Node* entity);
+    void render_grid(WGPURenderPassEncoder render_pass, WGPUBindGroup render_camera_bind_group);
 
     void resize_window(int width, int height);
     Uniform* get_voxel_grid_points_buffer() { return &voxel_voxelGridPointsBuffer; }
