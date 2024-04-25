@@ -102,7 +102,7 @@ int main() {
     std::cout << "Engine initialized" << std::endl;
 
     
-    static_cast<VCTRenderer*>(renderer)->init_voxelization(engine->entities[1]);
+    static_cast<VCTRenderer*>(renderer)->init_voxelization(engine->entities);
     std::cout << "Voxelization Renderer initialized" << std::endl;
 
 #ifdef __EMSCRIPTEN__

@@ -97,9 +97,9 @@ void VCTRenderer::render()
     clear_renderables();
 }
 
-void VCTRenderer::init_voxelization(MeshInstance3D* node)
+void VCTRenderer::init_voxelization(std::vector<MeshInstance3D*> nodes)
 {
-    voxelization_renderer.initialize(node);
+    voxelization_renderer.initialize(nodes);
 }
 
 void VCTRenderer::render_screen()
@@ -156,9 +156,7 @@ void VCTRenderer::render_screen()
 
         render_transparent(render_pass, render_camera_bind_group);
 
-        for (auto entity : static_cast<VCTEngine*>(VCTEngine::instance)->entities) {
-            voxelization_renderer.render_grid(render_pass, render_camera_bind_group, entity);
-        }
+        voxelization_renderer.render_grid(render_pass, render_camera_bind_group);
 
         wgpuRenderPassEncoderEnd(render_pass);
 

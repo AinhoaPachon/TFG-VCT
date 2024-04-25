@@ -9,9 +9,9 @@ struct GridData {
     _GridDepth : u32
 }
 
-struct VoxelRepresentation {
-    model : mat4x4f
-}
+// struct VoxelRepresentation {
+//     model : mat4x4f
+// }
 
 fn IntersectsTriangleAabbSat(v0: vec3f, v1: vec3f, v2: vec3f, aabb_extents: vec3f, axis: vec3f) -> bool
 {

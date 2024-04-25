@@ -56,7 +56,7 @@ class VCTRenderer : public Renderer {
 public:
 
     VCTRenderer();
-    void init_voxelization(MeshInstance3D* node);
+    void init_voxelization(std::vector<MeshInstance3D*> nodes);
 
     int initialize(GLFWwindow* window, bool use_mirror_screen = false) override;
     void clean() override;

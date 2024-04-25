@@ -52,21 +52,23 @@ void VoxelizationRenderer::init_bindings_voxelization_pipeline(std::vector<MeshI
 	std::vector<int> vertex_count;
 
 	// Bounds of the scene bounding box
-	glm::vec3 min_pos = { FLT_MAX, FLT_MAX, FLT_MAX };
-	glm::vec3 max_pos = { -FLT_MAX, -FLT_MAX, -FLT_MAX };
+	glm::vec4 min_pos = { FLT_MAX, FLT_MAX, FLT_MAX, 1.0 };
+	glm::vec4 max_pos = { -FLT_MAX, -FLT_MAX, -FLT_MAX, 1.0 };
 	
 	// Bounds of the current bounding box
-	glm::vec3 aabb_min;
-	glm::vec3 aabb_max;
+	glm::vec4 aabb_min;
+	glm::vec4 aabb_max;
 
 	for (auto node : nodes) {
 		// Scene bounding box
 		aabb = node->get_aabb();
 
-		aabb_min = aabb.center - aabb.half_size;
-		aabb_max = aabb.center + aabb.half_size;
+		glm::vec4 center_translated = node->get_model() * glm::vec4(aabb.center, 1.0);
 
-		glm::bvec3 less_than = glm::lessThan(aabb_min, min_pos);
+		aabb_min = center_translated - glm::vec4(aabb.half_size, 1.0);
+		aabb_max = center_translated + glm::vec4(aabb.half_size, 1.0);
+
+		glm::bvec4 less_than = glm::lessThan(aabb_min, min_pos);
 
 		if (less_than.x) {
 			min_pos.x = aabb_min.x;
@@ -78,7 +80,7 @@ void VoxelizationRenderer::init_bindings_voxelization_pipeline(std::vector<MeshI
 			min_pos.z = aabb_min.z;
 		}
 
-		glm::bvec3 greater_than = glm::greaterThan(aabb_max, max_pos);
+		glm::bvec4 greater_than = glm::greaterThan(aabb_max, max_pos);
 
 		if (greater_than.x) {
 			max_pos.x = aabb_max.x;
@@ -95,17 +97,14 @@ void VoxelizationRenderer::init_bindings_voxelization_pipeline(std::vector<MeshI
 		auto& vertices = surface->get_vertices();
 
 		for (int i = 0; i < vertices.size(); i++) {
-			vertex_positions.push_back(glm::vec4(vertices[i].position, 1.0));
+			vertex_positions.push_back(node->get_model() * glm::vec4(vertices[i].position, 1.0));
 		}
 
 		// Get the amount of vertices a node has
 		vertex_count.push_back(surface->get_vertex_count());
-
-		// Get the model
-		models.push_back(node->get_model());
 	}
-	scene_aabb.half_size = (max_pos - min_pos) * glm::vec3(0.5);
-	scene_aabb.center = max_pos - scene_aabb.half_size;
+	scene_aabb.half_size = glm::vec3((max_pos - min_pos).x * 0.5, (max_pos - min_pos).y * 0.5, (max_pos - min_pos).z * 0.5);
+	scene_aabb.center = glm::vec3(max_pos.x, max_pos.y, max_pos.z) - scene_aabb.half_size;
 
 	grid_data.bounds_min = glm::vec4(scene_aabb.center - scene_aabb.half_size, 1.0);
 	grid_data.cell_half_size = 0.05f;
@@ -140,9 +139,9 @@ void VoxelizationRenderer::init_bindings_voxelization_pipeline(std::vector<MeshI
 	voxel_vertexCount.buffer_size = 32;
 	voxel_vertexCount.data = webgpu_context->create_buffer(voxel_vertexCount.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Uniform, &vertex_count, "vertex count");
 
-	// Models of the nodes
+	// Number of nodes
 	voxel_representationBuffer.binding = 4;
-	voxel_representationBuffer.buffer_size = sizeof(voxelRepresentation);
+	voxel_representationBuffer.buffer_size = nodes.size();
 	voxel_representationBuffer.data = webgpu_context->create_buffer(voxel_representationBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Uniform, &voxel_representation, "voxel representation data");
 	
 	std::vector<Uniform*> uniforms = { &voxel_gridDataBuffer, &voxel_voxelGridPointsBuffer, &voxel_vertexPositionBuffer, &voxel_vertexCount, &voxel_representationBuffer };
