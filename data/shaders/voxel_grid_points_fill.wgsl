@@ -141,13 +141,9 @@ fn compute(@builtin(global_invocation_id) id: vec3<u32>) {
     var center_dum : vec4f = vec4f(center_pos, 1.0);
     var center_global : vec4f = _VoxelRepresentation.model * center_dum;
 
-    if (id.x == 1 && id.y == 1 && id.z == 1) {
-        _VoxelGridPoints[u32(id.x + grid_data._GridWidth * (id.y + grid_data._GridHeight * id.z))] = vec4f(
-                center_global.xyz, 0.5);
-    } else {
-        _VoxelGridPoints[u32(id.x + grid_data._GridWidth * (id.y + grid_data._GridHeight * id.z))] = vec4f(
-                center_global.xyz, w);
-    }
+    _VoxelGridPoints[u32(id.x + grid_data._GridWidth * (id.y + grid_data._GridHeight * id.z))] = vec4f(
+            center_pos.xyz, w);
+
 
 
 }

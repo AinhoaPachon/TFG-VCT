@@ -33,7 +33,7 @@ int VCTEngine::initialize(Renderer* renderer, GLFWwindow* window, bool use_glfw,
 
 	MeshInstance3D* monkey = parse_mesh("data/meshes/cube_test.obj");
 	monkey->scale(glm::vec3(1));
-	monkey->translate(glm::vec3(0.0f, 0.0f, 0.0f));
+	monkey->translate(glm::vec3(2.0f, 0.0f, 0.0f));
 	entities.push_back(monkey);
 
 	//Material grid_material;

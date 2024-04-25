@@ -49,8 +49,8 @@ void VoxelizationRenderer::init_bindings_voxelization_pipeline(MeshInstance3D* n
 	WebGPUContext* webgpu_context = VCTRenderer::instance->get_webgpu_context();
 
 	AABB aabb = node->get_aabb();
-
-	grid_data.bounds_min = glm::vec4(aabb.center - aabb.half_size, 1.0);
+	glm::vec4 center_translated = node->get_model() * glm::vec4(aabb.center, 1.0);
+	grid_data.bounds_min = center_translated - glm::vec4(aabb.half_size, 1.0);
 	grid_data.cell_half_size = 0.05f;
 
 	glm::vec3 grid_size_vec = ceil(aabb.half_size / glm::vec3(grid_data.cell_half_size));
@@ -76,11 +76,11 @@ void VoxelizationRenderer::init_bindings_voxelization_pipeline(MeshInstance3D* n
 	std::vector<glm::vec4> vertex_positions;
 
 	for (int i = 0; i < vertices.size(); i++) {
-		vertex_positions.push_back(glm::vec4(vertices[i].position, 1.0));
+		vertex_positions.push_back(node->get_model() * glm::vec4(vertices[i].position, 1.0));
 	}
 
 	voxel_vertexPositionBuffer.binding = 2;
-	voxel_vertexPositionBuffer.buffer_size = sizeof(glm::vec3) * vertex_positions.size();
+	voxel_vertexPositionBuffer.buffer_size = sizeof(glm::vec4) * vertex_positions.size();
 	voxel_vertexPositionBuffer.data = webgpu_context->create_buffer(voxel_vertexPositionBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Storage, vertex_positions.data(), "vertex positions");
 
 	int vertex_count = surface->get_vertex_count();
