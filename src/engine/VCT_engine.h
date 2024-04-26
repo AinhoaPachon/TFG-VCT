@@ -20,6 +20,7 @@ class VCTEngine : public Engine {
 
 public:
 	std::vector<MeshInstance3D*> entities;
+	std::vector<MeshInstance3D*> voxelized_nodes;
 
 	int initialize(Renderer* renderer, GLFWwindow* window, bool use_glfw, bool use_mirror_screen) override;
 

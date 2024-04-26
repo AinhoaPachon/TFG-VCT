@@ -93,8 +93,8 @@ fn IntersectsTriangleAabb(tri_a: vec3f, tri_b: vec3f, tri_c: vec3f, aabb_center:
 @group(0) @binding(0) var<uniform> grid_data: GridData;
 @group(0) @binding(1) var<storage, read_write> _VoxelGridPoints: array<vec4f>;
 @group(0) @binding(2) var<storage, read_write> _MeshVertexPositions: array<vec4f>;
-@group(0) @binding(3) var<uniform> _VertexCount: u32;
-@group(0) @binding(4) var<uniform> _VoxelRepresentation: VoxelRepresentation;
+@group(0) @binding(3) var<storage, read_write> _VertexCount: array<u32>;
+@group(0) @binding(4) var<uniform> _VoxelRepresentation: u32;
 
 @compute @workgroup_size(4, 4, 4)
 fn compute(@builtin(global_invocation_id) id: vec3<u32>) {
@@ -118,7 +118,7 @@ fn compute(@builtin(global_invocation_id) id: vec3<u32>) {
     var tri_b : vec3f;
     var tri_c : vec3f;
 
-    for(var j : u32 = 0; j < _VertexCount.size(); j = j + 1) {
+    for(var j : u32 = 0; j < _VoxelRepresentation; j = j + 1) {
         for(var i : u32 = 0; i < _VertexCount[j]; i = i + 3) {
             tri_a = _MeshVertexPositions[i].xyz;
             tri_b = _MeshVertexPositions[i + 1].xyz;
@@ -129,6 +129,9 @@ fn compute(@builtin(global_invocation_id) id: vec3<u32>) {
             if(intersects) {
                 break;
             }
+        }
+        if(intersects) {
+            break;
         }
     }
     

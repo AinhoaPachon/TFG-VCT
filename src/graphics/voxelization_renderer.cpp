@@ -136,13 +136,14 @@ void VoxelizationRenderer::init_bindings_voxelization_pipeline(std::vector<MeshI
 
 	// Amount of vertices in each entity
 	voxel_vertexCount.binding = 3;
-	voxel_vertexCount.buffer_size = 32;
-	voxel_vertexCount.data = webgpu_context->create_buffer(voxel_vertexCount.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Uniform, &vertex_count, "vertex count");
+	voxel_vertexCount.buffer_size = sizeof(int) * vertex_count.size();
+	voxel_vertexCount.data = webgpu_context->create_buffer(voxel_vertexCount.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Storage, vertex_count.data(), "vertex count");
 
 	// Number of nodes
+	int number_nodes = nodes.size();
 	voxel_representationBuffer.binding = 4;
-	voxel_representationBuffer.buffer_size = nodes.size();
-	voxel_representationBuffer.data = webgpu_context->create_buffer(voxel_representationBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Uniform, &voxel_representation, "voxel representation data");
+	voxel_representationBuffer.buffer_size = 32 * nodes.size();
+	voxel_representationBuffer.data = webgpu_context->create_buffer(voxel_representationBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Uniform, &number_nodes, "voxel representation data");
 	
 	std::vector<Uniform*> uniforms = { &voxel_gridDataBuffer, &voxel_voxelGridPointsBuffer, &voxel_vertexPositionBuffer, &voxel_vertexCount, &voxel_representationBuffer };
 	voxelization_bindgroup = webgpu_context->create_bind_group(uniforms, voxelization_shader, 0);
