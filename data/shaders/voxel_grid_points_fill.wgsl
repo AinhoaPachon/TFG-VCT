@@ -118,13 +118,16 @@ fn compute(@builtin(global_invocation_id) id: vec3<u32>) {
     var tri_b : vec3f;
     var tri_c : vec3f;
 
+
+    var count : u32 = 0;
     for(var j : u32 = 0; j < _VoxelRepresentation; j = j + 1) {
         for(var i : u32 = 0; i < _VertexCount[j]; i = i + 3) {
-            tri_a = _MeshVertexPositions[i].xyz;
-            tri_b = _MeshVertexPositions[i + 1].xyz;
-            tri_c = _MeshVertexPositions[i + 2].xyz;
+            tri_a = _MeshVertexPositions[count].xyz;
+            tri_b = _MeshVertexPositions[count + 1].xyz;
+            tri_c = _MeshVertexPositions[count + 2].xyz;
             intersects = IntersectsTriangleAabb(tri_a, tri_b, tri_c, aabb_center, aabb_extents);
             
+            count = count + 3;
             // Break loop when we find a triangle that intersects with the current voxel
             if(intersects) {
                 break;

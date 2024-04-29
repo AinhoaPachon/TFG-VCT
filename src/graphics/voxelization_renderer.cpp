@@ -142,7 +142,7 @@ void VoxelizationRenderer::init_bindings_voxelization_pipeline(std::vector<MeshI
 	// Number of nodes
 	int number_nodes = nodes.size();
 	voxel_representationBuffer.binding = 4;
-	voxel_representationBuffer.buffer_size = 32 * nodes.size();
+	voxel_representationBuffer.buffer_size = sizeof(int) * number_nodes;
 	voxel_representationBuffer.data = webgpu_context->create_buffer(voxel_representationBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Uniform, &number_nodes, "voxel representation data");
 	
 	std::vector<Uniform*> uniforms = { &voxel_gridDataBuffer, &voxel_voxelGridPointsBuffer, &voxel_vertexPositionBuffer, &voxel_vertexCount, &voxel_representationBuffer };
