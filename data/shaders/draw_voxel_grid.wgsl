@@ -10,7 +10,7 @@ fn vs_main(in: VertexInput) -> VertexOutput {
     var half: f32 = cellSize / 2.0f;
     var out: VertexOutput;
     var localPos : vec4f = _VoxelGridPoints[in.instance_id];
-    out.position = camera_data.view_projection * vec4f(localPos.xyz + in.position * 0.01, 1.0);
+    out.position = camera_data.view_projection * vec4f(localPos.xyz + in.position * 0.01f, 1.0);
     out.color = vec4f(0.5, 0.0, 0.9, localPos.w);
     out.normal = localPos.rgb;
     return out; 

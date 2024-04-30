@@ -25,25 +25,19 @@ int VCTEngine::initialize(Renderer* renderer, GLFWwindow* window, bool use_glfw,
 	skybox = new Environment3D();
 
 	entities.push_back(skybox);
+	/*
+	MeshInstance3D* monkey = parse_mesh("data/Sponza-master/sponza.obj");
+	monkey->scale(glm::vec3(0.5f));
+	monkey->translate(glm::vec3(0.0f, 0.0f, 0.0f));
+	entities.push_back(monkey);*/
 
-	/*MeshInstance3D* teapot = parse_mesh("data/meshes/teapot.obj");
-	teapot->scale(glm::vec3(1));
-	teapot->translate(glm::vec3(0.0f, 0.0f, 0.0f));
-	entities.push_back(teapot);*/
-	
-	MeshInstance3D* monkey = parse_mesh("data/meshes/monkey.obj");
-	monkey->scale(glm::vec3(1));
-	monkey->translate(glm::vec3(0.0f, 0.5f, 0.0f));
-	entities.push_back(monkey);
-
-	MeshInstance3D* monkey2 = parse_mesh("data/meshes/teapot.obj");
-	monkey2->scale(glm::vec3(0.5));
-	monkey2->translate(glm::vec3(6.0f, 0.0f, 0.0f));
+	MeshInstance3D* monkey2 = parse_mesh("data/meshes/assets/dragon.obj");
+	monkey2->scale(glm::vec3(1));
+	monkey2->translate(glm::vec3(0.0f, 0.0f, 0.0f));
 	entities.push_back(monkey2);
 
-	voxelized_nodes.push_back(monkey);
+	//voxelized_nodes.push_back(monkey);
 	voxelized_nodes.push_back(monkey2);
-
 
 	//Material grid_material;
 	//render_voxelization_shader = RendererStorage::get_shader("data/shaders/draw_voxel_grid.wgsl");

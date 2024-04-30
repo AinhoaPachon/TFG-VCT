@@ -107,7 +107,7 @@ void VoxelizationRenderer::init_bindings_voxelization_pipeline(std::vector<MeshI
 	scene_aabb.center = glm::vec3(max_pos.x, max_pos.y, max_pos.z) - scene_aabb.half_size;
 
 	grid_data.bounds_min = glm::vec4(scene_aabb.center - scene_aabb.half_size, 1.0);
-	grid_data.cell_half_size = 0.05f;
+	grid_data.cell_half_size = 0.025f;
 
 	glm::vec3 grid_size_vec = ceil(scene_aabb.half_size / glm::vec3(grid_data.cell_half_size));
 	grid_data.grid_width = grid_size_vec.x;
