@@ -3,7 +3,7 @@
 @group(0) @binding(1) var<storage, read> _VoxelGridPoints: array<vec4f>;
 @group(0) @binding(2) var<uniform> cellSize: f32;
 
-@group(1) @binding(0) var<uniform> camera_data : CameraData;
+#dynamic @group(1) @binding(0) var<uniform> camera_data : CameraData;
 
 @vertex
 fn vs_main(in: VertexInput) -> VertexOutput {

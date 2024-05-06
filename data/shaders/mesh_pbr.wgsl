@@ -7,7 +7,7 @@
 
 @group(0) @binding(0) var<storage, read> mesh_data : InstanceData;
 
-@group(1) @binding(0) var<uniform> camera_data : CameraData;
+#dynamic @group(1) @binding(0) var<uniform> camera_data : CameraData;
 
 #ifdef ALBEDO_TEXTURE
 @group(2) @binding(0) var albedo_texture: texture_2d<f32>;
@@ -43,22 +43,42 @@
 @group(2) @binding(8) var<uniform> alpha_cutoff: f32;
 #endif
 
+#ifdef USE_SKINNING
+@group(2) @binding(10) var<storage, read> animated_matrices: array<mat4x4f>;
+@group(2) @binding(11) var<storage, read> inv_bind_matrices: array<mat4x4f>;
+#endif
+
 @group(3) @binding(0) var irradiance_texture: texture_cube<f32>;
 @group(3) @binding(1) var brdf_lut_texture: texture_2d<f32>;
 @group(3) @binding(2) var sampler_clamp: sampler;
+@group(3) @binding(3) var<uniform> lights : array<Light, MAX_LIGHTS>;
+@group(3) @binding(4) var<uniform> num_lights : u32;
 
 @vertex
 fn vs_main(in: VertexInput) -> VertexOutput {
+    
+    var position = vec4f(in.position, 1.0);
+    var normals = vec4f(in.normal, 0.0);
+
+#ifdef USE_SKINNING
+    var skin : mat4x4f = (animated_matrices[in.joints.x] * inv_bind_matrices[in.joints.x]) * in.weights.x;
+    skin += (animated_matrices[in.joints.y] * inv_bind_matrices[in.joints.y]) * in.weights.y;
+    skin += (animated_matrices[in.joints.z] * inv_bind_matrices[in.joints.z]) * in.weights.z;
+    skin += (animated_matrices[in.joints.w] * inv_bind_matrices[in.joints.w]) * in.weights.w;
+    position = skin * position;
+    normals = skin * normals;
+#endif
 
     let instance_data : RenderMeshData = mesh_data.data[in.instance_id];
 
     var out: VertexOutput;
-    var world_position = instance_data.model * vec4f(in.position, 1.0);
+    var world_position = instance_data.model * position;
     out.world_position = world_position.xyz;
     out.position = camera_data.view_projection * world_position;
     out.uv = in.uv; // forward to the fragment shader
-    out.color = vec4(in.color, 1.0) * albedo;
-    out.normal = (instance_data.model * vec4f(in.normal, 0.0)).xyz;
+    out.color = vec4f(in.color, 1.0) * albedo;
+    out.normal = (instance_data.model * normals).xyz;
+    
     return out;
 }
 
@@ -118,6 +138,8 @@ fn fs_main(in: VertexOutput) -> FragmentOutput {
     m.roughness = max(m.roughness, 0.04);
     m.c_diff = mix(m.albedo, vec3f(0.0), m.metallic);
     m.f0 = mix(vec3f(0.04), m.albedo, m.metallic);
+    m.f90 = vec3f(1.0);
+    m.specular_weight = 1.0;
 
     // Vectors
 
@@ -134,14 +156,12 @@ fn fs_main(in: VertexOutput) -> FragmentOutput {
 
     m.reflected_dir = normalize(reflect(-m.view_dir, m.normal));
 
-    // var distance : f32 = length(light_position - m.pos);
-    // var attenuation : f32 = pow(1.0 - saturate(distance/light_max_radius), 1.5);
     var final_color : vec3f = vec3f(0.0);
-    // final_color += get_direct_light(m, vec3f(1.0), 1.0);
-
+    final_color += get_indirect_light(m);
+    final_color += get_direct_light(m);
     final_color += m.emissive;
 
-    final_color += tonemap_khronos_pbr_neutral(get_indirect_light(m));
+    final_color = tonemap_khronos_pbr_neutral(final_color);
 
     if (GAMMA_CORRECTION == 1) {
         final_color = pow(final_color, vec3(1.0 / 2.2));

@@ -9,6 +9,8 @@ struct VertexInput {
     @location(2) normal: vec3f,
     @location(3) tangent: vec3f,
     @location(4) color: vec3f,
+    @location(5) weights: vec4f,
+    @location(6) joints: vec4i
 };
 
 struct VertexOutput {
@@ -38,9 +40,10 @@ struct UIData {
     num_group_items : f32,
     is_selected : f32,
     is_color_button : f32,
-    picker_color: vec4f,
+    picker_color: vec3f,
     keep_rgb : f32,
     slider_value : f32,
     slider_max: f32,
+    slider_min: f32,
     is_button_disabled : f32
 };

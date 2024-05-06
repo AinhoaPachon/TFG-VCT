@@ -5,6 +5,7 @@
 #include "framework/scene/parse_scene.h"
 #include "framework/nodes/environment_3d.h"
 
+#include "graphics/renderer_storage.h"
 #include "graphics/VCT_renderer.h"
 
 #include <iostream>
@@ -25,18 +26,18 @@ int VCTEngine::initialize(Renderer* renderer, GLFWwindow* window, bool use_glfw,
 	skybox = new Environment3D();
 
 	entities.push_back(skybox);
-	/*
-	MeshInstance3D* monkey = parse_mesh("data/Sponza-master/sponza.obj");
+	
+	MeshInstance3D* monkey = parse_mesh("data/meshes/monkey.obj");
 	monkey->scale(glm::vec3(0.5f));
 	monkey->translate(glm::vec3(0.0f, 0.0f, 0.0f));
-	entities.push_back(monkey);*/
+	entities.push_back(monkey);
 
-	MeshInstance3D* monkey2 = parse_mesh("data/meshes/assets/dragon.obj");
+	MeshInstance3D* monkey2 = parse_mesh("data/meshes/monkey.obj");
 	monkey2->scale(glm::vec3(1));
-	monkey2->translate(glm::vec3(0.0f, 0.0f, 0.0f));
+	monkey2->translate(glm::vec3(2.0f, 0.0f, 0.0f));
 	entities.push_back(monkey2);
 
-	//voxelized_nodes.push_back(monkey);
+	voxelized_nodes.push_back(monkey);
 	voxelized_nodes.push_back(monkey2);
 
 	//Material grid_material;

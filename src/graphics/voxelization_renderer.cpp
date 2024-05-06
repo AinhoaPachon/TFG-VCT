@@ -9,6 +9,9 @@
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_wgpu.h"
 
+#include "graphics/renderer_storage.h"
+#include "graphics/debug/renderdoc_capture.h"
+
 #include "framework/nodes/mesh_instance_3d.h"
 #include "framework/scene/parse_scene.h"
 
@@ -60,8 +63,11 @@ void VoxelizationRenderer::init_bindings_voxelization_pipeline(std::vector<MeshI
 	glm::vec4 aabb_max;
 
 	for (auto node : nodes) {
+		
+		surface = node->get_surface(0);
+
 		// Scene bounding box
-		aabb = node->get_aabb();
+		aabb = surface->get_aabb();
 
 		glm::vec4 center_translated = node->get_model() * glm::vec4(aabb.center, 1.0);
 
@@ -93,7 +99,6 @@ void VoxelizationRenderer::init_bindings_voxelization_pipeline(std::vector<MeshI
 		}
 
 		// Get the vertices from the node
-		surface = node->get_surface(0);
 		auto& vertices = surface->get_vertices();
 
 		for (int i = 0; i < vertices.size(); i++) {
@@ -252,7 +257,7 @@ void VoxelizationRenderer::render()
 {
 }
 
-void VoxelizationRenderer::render_grid(WGPURenderPassEncoder render_pass, WGPUBindGroup render_camera_bind_group)
+void VoxelizationRenderer::render_grid(WGPURenderPassEncoder render_pass, WGPUBindGroup render_camera_bind_group, uint32_t camera_buffer_stride)
 {
 	WebGPUContext* webgpu_context = VCTRenderer::instance->get_webgpu_context();
 
@@ -265,7 +270,7 @@ void VoxelizationRenderer::render_grid(WGPURenderPassEncoder render_pass, WGPUBi
 
 	// Set Bind groups
 	wgpuRenderPassEncoderSetBindGroup(render_pass, 0, render_voxelization_bind_group, 0, nullptr);
-	wgpuRenderPassEncoderSetBindGroup(render_pass, 1, render_camera_bind_group, 0, nullptr);
+	wgpuRenderPassEncoderSetBindGroup(render_pass, 1, render_camera_bind_group, 1, &camera_buffer_stride);
 
 	// Set vertex buffer while encoding the render pass
 	wgpuRenderPassEncoderSetVertexBuffer(render_pass, 0, surface->get_vertex_buffer(), 0, surface->get_byte_size());

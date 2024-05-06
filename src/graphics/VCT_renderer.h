@@ -26,12 +26,23 @@ class VCTRenderer : public Renderer {
         glm::mat4x4 mvp;
         glm::vec3 eye;
         float dummy;
-    } camera_data;
-    Uniform         camera_uniform;
+    };
 
-    WGPUBindGroup   render_camera_bind_group = nullptr;
+    sCameraData camera_data;
+    sCameraData camera_2d_data;
 
-    void render_screen();
+    Uniform  camera_uniform;
+    Uniform  camera_2d_uniform;
+
+    uint32_t camera_buffer_stride = 0;
+
+    WGPUCommandEncoder global_command_encoder;
+
+    // Render meshes with material color
+    WGPUBindGroup render_bind_group_camera = nullptr;
+    WGPUBindGroup render_bind_group_camera_2d = nullptr;
+
+    void render_screen(WGPUTextureView swapchain_view);
 
     void init_camera_bind_group();  
 
@@ -41,7 +52,7 @@ class VCTRenderer : public Renderer {
 
     // For the XR mirror screen
 #if defined(USE_MIRROR_WINDOW)
-    void render_mirror();
+    void render_mirror(WGPUTextureView swapchain_view);
     void init_mirror_pipeline();
 
     Pipeline mirror_pipeline;
