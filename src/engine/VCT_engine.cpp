@@ -4,6 +4,8 @@
 #include "framework/input.h"
 #include "framework/scene/parse_scene.h"
 #include "framework/nodes/environment_3d.h"
+#include "framework/nodes/omni_light_3d.h"
+
 
 #include "graphics/renderer_storage.h"
 #include "graphics/VCT_renderer.h"
@@ -37,8 +39,23 @@ int VCTEngine::initialize(Renderer* renderer, GLFWwindow* window, bool use_glfw,
 	monkey2->translate(glm::vec3(2.0f, 0.0f, 0.0f));
 	entities.push_back(monkey2);
 
+	//Surface* surface = monkey->get_surface(0);
+	//surface->set_material_color(glm::vec4(0.5f, 0.4f, 0.0f, 1.0f));
+
+	Material material;
+	material.color = glm::vec4(0.5f, 0.4f, 0.0f, 1.0f);
+	material.shader = RendererStorage::get_shader("data/shaders/mesh_color.wgsl", material);
+	monkey->set_surface_material_override(monkey->get_surface(0), material);
+
 	voxelized_nodes.push_back(monkey);
 	voxelized_nodes.push_back(monkey2);
+
+	Light3D* light = new OmniLight3D();
+	light->set_intensity(5.0f);
+	light->set_translation(glm::vec3(2.0f, 2.0f, 2.0f));
+	light->set_color({ 1.0f, 1.0f, 1.0f });
+	light->set_range(5.0f);
+	entities.push_back(light);
 
 	//Material grid_material;
 	//render_voxelization_shader = RendererStorage::get_shader("data/shaders/draw_voxel_grid.wgsl");
@@ -69,6 +86,29 @@ void VCTEngine::update(float delta_time)
 
 void VCTEngine::render()
 {
+	// Lights
+	{
+		for (auto entity : entities)
+		{
+			Light3D* light_node = dynamic_cast<Light3D*>(entity);
+
+			if (!light_node)
+			{
+				continue;
+			}
+			if (light_node->get_intensity() < 0.001f)
+			{
+				continue;
+			}
+			if (light_node->get_type() != LIGHT_DIRECTIONAL && light_node->get_range() == 0.0f)
+			{
+				continue;
+			}
+
+			VCTRenderer::instance->add_light(light_node);
+		}
+	}
+
 	for (auto entity : entities) {
 		entity->render();
 	}

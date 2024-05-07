@@ -3,6 +3,7 @@
 #include "engine.h"
 #include "graphics/pipeline.h"
 #include "graphics/surface.h"
+#include "framework/nodes/light_3d.h"
 
 #include <vector>
 
@@ -19,7 +20,7 @@ class VCTEngine : public Engine {
 	Environment3D* skybox = nullptr;
 
 public:
-	std::vector<MeshInstance3D*> entities;
+	std::vector<Node3D*> entities;
 	std::vector<MeshInstance3D*> voxelized_nodes;
 
 	int initialize(Renderer* renderer, GLFWwindow* window, bool use_glfw, bool use_mirror_screen) override;
