@@ -43,9 +43,16 @@ int VCTEngine::initialize(Renderer* renderer, GLFWwindow* window, bool use_glfw,
 	//surface->set_material_color(glm::vec4(0.5f, 0.4f, 0.0f, 1.0f));
 
 	Material material;
-	material.color = glm::vec4(0.5f, 0.4f, 0.0f, 1.0f);
-	material.shader = RendererStorage::get_shader("data/shaders/mesh_color.wgsl", material);
+	material.color = glm::vec4(0.7f, 0.0f, 0.5f, 1.0f);
+	material.shader = RendererStorage::get_shader("data/shaders/mesh_pbr.wgsl", material);
+	material.flags = 1;
 	monkey->set_surface_material_override(monkey->get_surface(0), material);
+
+	material.color = glm::vec4(0.0f, 0.4f, 0.9f, 1.0f);
+	material.shader = RendererStorage::get_shader("data/shaders/mesh_pbr.wgsl", material);
+	material.flags = 1;
+	material.emissive = glm::vec3(0.6f, 0.2f, 0.45f);
+	monkey2->set_surface_material_override(monkey->get_surface(0), material);
 
 	voxelized_nodes.push_back(monkey);
 	voxelized_nodes.push_back(monkey2);
@@ -56,12 +63,6 @@ int VCTEngine::initialize(Renderer* renderer, GLFWwindow* window, bool use_glfw,
 	light->set_color({ 1.0f, 1.0f, 1.0f });
 	light->set_range(5.0f);
 	entities.push_back(light);
-
-	//Material grid_material;
-	//render_voxelization_shader = RendererStorage::get_shader("data/shaders/draw_voxel_grid.wgsl");
-	////render_voxelization_shader = RendererStorage::get_shader("data/shaders/mesh_grid.wgsl");
-	//grid_material.shader = render_voxelization_shader;
-	//grid_material.transparency_type = ALPHA_BLEND;
 
 	//floor_grid_mesh->set_surface_material_override(floor_grid_mesh->get_surface(0), grid_material);
 
@@ -77,7 +78,6 @@ void VCTEngine::update(float delta_time)
 {
 	Engine::update(delta_time);
 
-    //entities[0]->rotate(0.8f * delta_time, glm::vec3(0.0f, 0.0f, 1.0f));
 	for (auto entity : entities) {
 		entity->update(delta_time);
 	}
