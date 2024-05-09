@@ -9,10 +9,6 @@ struct GridData {
     _GridDepth : u32
 }
 
-// struct VoxelRepresentation {
-//     model : mat4x4f
-// }
-
 fn IntersectsTriangleAabbSat(v0: vec3f, v1: vec3f, v2: vec3f, aabb_extents: vec3f, axis: vec3f) -> bool
 {
     // Project each triangle vertex onto the axis
@@ -25,7 +21,8 @@ fn IntersectsTriangleAabbSat(v0: vec3f, v1: vec3f, v2: vec3f, aabb_extents: vec3
     2. We project the face normal onto the provided axis, with a result between -1 and 1
     3. Take the latter number and convert it from 0 to 1. This number represents how aligned the face normal and the axis are
     4. We multiply that value by the AABB extent. The sum of all those values is r, the length of the AABB into a single axis
-    */ 
+    */
+
     let r : f32 = aabb_extents.x * abs(dot(vec3f(1.0, 0.0, 0.0), axis)) +
         aabb_extents.y * abs(dot(vec3f(0.0, 1.0, 0.0), axis)) +
         aabb_extents.z * abs(dot(vec3f(0.0, 0.0, 1.0), axis));
@@ -94,7 +91,7 @@ fn IntersectsTriangleAabb(tri_a: vec3f, tri_b: vec3f, tri_c: vec3f, aabb_center:
 @group(0) @binding(1) var<storage, read_write> _VoxelGridPoints: array<vec4f>;
 @group(0) @binding(2) var<storage, read_write> _MeshVertexPositions: array<vec4f>;
 @group(0) @binding(3) var<storage, read_write> _VertexCount: array<u32>;
-@group(0) @binding(4) var<uniform> _VoxelRepresentation: u32;
+@group(0) @binding(4) var<uniform> _MeshCount: u32;
 
 @compute @workgroup_size(4, 4, 4)
 fn compute(@builtin(global_invocation_id) id: vec3<u32>) {
@@ -105,6 +102,7 @@ fn compute(@builtin(global_invocation_id) id: vec3<u32>) {
 
     let cellSize : f32 = grid_data._CellHalfSize * 2.0;
     
+    // center of the current voxel
     let center_pos : vec3f = vec3f(
         f32(id.x) * cellSize + grid_data._CellHalfSize + grid_data._BoundsMin.x,
         f32(id.y) * cellSize + grid_data._CellHalfSize + grid_data._BoundsMin.y,
@@ -117,14 +115,17 @@ fn compute(@builtin(global_invocation_id) id: vec3<u32>) {
     var tri_a : vec3f;
     var tri_b : vec3f;
     var tri_c : vec3f;
-
-
     var count : u32 = 0;
-    for(var j : u32 = 0; j < _VoxelRepresentation; j = j + 1) {
+
+    // Number of meshes in the scene
+    for(var j : u32 = 0; j < _MeshCount; j = j + 1) {
+        // Number of vertices a mesh has
         for(var i : u32 = 0; i < _VertexCount[j]; i = i + 3) {
+            // Get a triangle
             tri_a = _MeshVertexPositions[count].xyz;
             tri_b = _MeshVertexPositions[count + 1].xyz;
             tri_c = _MeshVertexPositions[count + 2].xyz;
+            // Check intersection
             intersects = IntersectsTriangleAabb(tri_a, tri_b, tri_c, aabb_center, aabb_extents);
             
             count = count + 3;

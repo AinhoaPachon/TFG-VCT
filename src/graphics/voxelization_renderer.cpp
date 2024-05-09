@@ -110,10 +110,12 @@ void VoxelizationRenderer::init_bindings_voxelization_pipeline(std::vector<MeshI
 	}
 	scene_aabb.half_size = glm::vec3((max_pos - min_pos).x * 0.5, (max_pos - min_pos).y * 0.5, (max_pos - min_pos).z * 0.5);
 	scene_aabb.center = glm::vec3(max_pos.x, max_pos.y, max_pos.z) - scene_aabb.half_size;
-
+	
+	// Translate the grid min to the minimum of the scene
 	grid_data.bounds_min = glm::vec4(scene_aabb.center - scene_aabb.half_size, 1.0);
 	grid_data.cell_half_size = 0.025f;
 
+	// Grid size
 	glm::vec3 grid_size_vec = ceil(scene_aabb.half_size / glm::vec3(grid_data.cell_half_size));
 	grid_data.grid_width = grid_size_vec.x;
 	grid_data.grid_height = grid_size_vec.y;
@@ -123,16 +125,18 @@ void VoxelizationRenderer::init_bindings_voxelization_pipeline(std::vector<MeshI
 	for (int i = 0; i < grid_data.grid_width * grid_data.grid_height * grid_data.grid_depth; ++i) {
 		initial_values.push_back(glm::vec4(0.0, 0.0, 0.0, 0.0));
 	}
+	voxel_representation.position = initial_values;
+	voxel_representation.color = initial_values;
 
-	// Information about the grid, such as its size, the translation or the cell size
+	// Information about the grid, such as its size, its translation or the cell size
 	voxel_gridDataBuffer.binding = 0;
 	voxel_gridDataBuffer.buffer_size = sizeof(gridData);
 	voxel_gridDataBuffer.data = webgpu_context->create_buffer(voxel_gridDataBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Uniform, &grid_data, "grid data buffer");
 
 	// Positions of the voxels in the grid
-	voxel_voxelGridPointsBuffer.binding = 1;
-	voxel_voxelGridPointsBuffer.buffer_size = sizeof(glm::vec4) * grid_data.grid_width * grid_data.grid_height * grid_data.grid_depth;
-	voxel_voxelGridPointsBuffer.data = webgpu_context->create_buffer(voxel_voxelGridPointsBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Storage, initial_values.data(), "grid points buffer");
+	voxel_representationBuffer.binding = 1;
+	voxel_representationBuffer.buffer_size = sizeof(glm::vec4) * voxel_representation.position.size() + sizeof(glm::vec4) * voxel_representation.color.size();
+	voxel_representationBuffer.data = webgpu_context->create_buffer(voxel_representationBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Storage, &voxel_representation, "grid points buffer");
 
 	// Positions of the vertices
 	voxel_vertexPositionBuffer.binding = 2;
@@ -146,11 +150,11 @@ void VoxelizationRenderer::init_bindings_voxelization_pipeline(std::vector<MeshI
 
 	// Number of nodes
 	int number_nodes = nodes.size();
-	voxel_representationBuffer.binding = 4;
-	voxel_representationBuffer.buffer_size = sizeof(int) * number_nodes;
-	voxel_representationBuffer.data = webgpu_context->create_buffer(voxel_representationBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Uniform, &number_nodes, "voxel representation data");
+	voxel_meshCountBuffer.binding = 4;
+	voxel_meshCountBuffer.buffer_size = sizeof(int) * number_nodes;
+	voxel_meshCountBuffer.data = webgpu_context->create_buffer(voxel_meshCountBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Uniform, &number_nodes, "number of meshes");
 	
-	std::vector<Uniform*> uniforms = { &voxel_gridDataBuffer, &voxel_voxelGridPointsBuffer, &voxel_vertexPositionBuffer, &voxel_vertexCount, &voxel_representationBuffer };
+	std::vector<Uniform*> uniforms = { &voxel_gridDataBuffer, &voxel_voxelGridPointsBuffer, &voxel_vertexPositionBuffer, &voxel_vertexCount, &voxel_meshCountBuffer };
 	voxelization_bindgroup = webgpu_context->create_bind_group(uniforms, voxelization_shader, 0);
 }
 
@@ -228,7 +232,12 @@ void VoxelizationRenderer::init_render_voxelization_pipeline()
 	voxel_cell_size.buffer_size = sizeof(float);
 	voxel_cell_size.data = webgpu_context->create_buffer(voxel_cell_size.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Uniform, &cell_size, "cell size");
 
-	std::vector<Uniform*> uniforms = { get_voxel_grid_points_buffer(), &voxel_cell_size };
+	// Voxel Representation Structure
+	voxel_representationBuffer.binding = 3;
+	voxel_representationBuffer.buffer_size = sizeof(meshRepresentation);
+	voxel_representationBuffer.data = webgpu_context->create_buffer(voxel_representationBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Uniform, &mesh_representation, "voxel representation data");
+
+	std::vector<Uniform*> uniforms = { get_voxel_grid_points_buffer(), &voxel_cell_size, &voxel_representationBuffer };
 	render_voxelization_bind_group = webgpu_context->create_bind_group(uniforms, RendererStorage::get_shader("data/shaders/draw_voxel_grid.wgsl"), 0);
 
 	render_voxelization_pipeline.create_render(RendererStorage::get_shader("data/shaders/draw_voxel_grid.wgsl"), color_target);
@@ -244,6 +253,7 @@ void VoxelizationRenderer::clean()
 	voxel_vertexPositionBuffer.destroy();
 	voxel_vertexCount.destroy();
 	voxel_representationBuffer.destroy();
+	voxel_meshCountBuffer.destroy();
 	voxel_cell_size.destroy();
 
 	wgpuBindGroupRelease(voxelization_bindgroup);

@@ -25,8 +25,13 @@ class VoxelizationRenderer {
         int grid_depth;
     } grid_data;
 
+    struct meshRepresentation {
+        glm::vec4 color;
+    } mesh_representation;
+
     struct voxelRepresentation {
-        glm::mat4x4 model;
+        std::vector<glm::vec4> position;
+        std::vector<glm::vec4> color;
     } voxel_representation;
 
     Pipeline		voxelization_pipeline;
@@ -40,6 +45,7 @@ class VoxelizationRenderer {
     Uniform         voxel_vertexPositionBuffer;
     Uniform         voxel_vertexCount;
     Uniform         voxel_representationBuffer;
+    Uniform         voxel_meshCountBuffer;
     Uniform         voxel_cell_size;
 
     Pipeline		render_voxelization_pipeline;

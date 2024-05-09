@@ -46,9 +46,10 @@ int VCTEngine::initialize(Renderer* renderer, GLFWwindow* window, bool use_glfw,
 	material.color = glm::vec4(0.7f, 0.0f, 0.5f, 1.0f);
 	material.shader = RendererStorage::get_shader("data/shaders/mesh_pbr.wgsl", material);
 	material.flags = 1;
+	material.metalness = 1.0;
 	monkey->set_surface_material_override(monkey->get_surface(0), material);
 
-	material.color = glm::vec4(0.0f, 0.4f, 0.9f, 1.0f);
+	material.color = glm::vec4(0.9f, 0.9f, 0.0f, 1.0f);
 	material.shader = RendererStorage::get_shader("data/shaders/mesh_pbr.wgsl", material);
 	material.flags = 1;
 	material.emissive = glm::vec3(0.6f, 0.2f, 0.45f);

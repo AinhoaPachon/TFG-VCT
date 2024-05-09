@@ -1,7 +1,12 @@
 #include mesh_includes.wgsl
 
+struct VoxelRepresentation {
+    color : vec4f
+}
+
 @group(0) @binding(1) var<storage, read> _VoxelGridPoints: array<vec4f>;
 @group(0) @binding(2) var<uniform> cellSize: f32;
+@group(0) @binding(3) var<uniform> _VoxelRepresentation: VoxelRepresentation
 
 #dynamic @group(1) @binding(0) var<uniform> camera_data : CameraData;
 
