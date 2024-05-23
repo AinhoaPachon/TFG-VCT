@@ -92,6 +92,12 @@ fn IntersectsTriangleAabb(tri_a: vec3f, tri_b: vec3f, tri_c: vec3f, aabb_center:
 @group(0) @binding(2) var<storage, read_write> _MeshVertexPositions: array<vec4f>;
 @group(0) @binding(3) var<storage, read_write> _VertexCount: array<u32>;
 @group(0) @binding(4) var<uniform> _MeshCount: u32;
+@group(0) @binding(5) var<storage, read_write> _VoxelColor: array<vec4f>;
+
+@group(0) @binding(6) var<storage, read_write> _MeshesColor: array<vec4f>;
+
+
+@group(0) @binding(7) var<storage, read_write> _VertexColors: array<vec4f>;
 
 @compute @workgroup_size(4, 4, 4)
 fn compute(@builtin(global_invocation_id) id: vec3<u32>) {
@@ -117,6 +123,8 @@ fn compute(@builtin(global_invocation_id) id: vec3<u32>) {
     var tri_c : vec3f;
     var count : u32 = 0;
 
+    var color : vec4f;
+
     // Number of meshes in the scene
     for(var j : u32 = 0; j < _MeshCount; j = j + 1) {
         // Number of vertices a mesh has
@@ -125,35 +133,33 @@ fn compute(@builtin(global_invocation_id) id: vec3<u32>) {
             tri_a = _MeshVertexPositions[count].xyz;
             tri_b = _MeshVertexPositions[count + 1].xyz;
             tri_c = _MeshVertexPositions[count + 2].xyz;
+
             // Check intersection
             intersects = IntersectsTriangleAabb(tri_a, tri_b, tri_c, aabb_center, aabb_extents);
             
-            count = count + 3;
             // Break loop when we find a triangle that intersects with the current voxel
             if(intersects) {
+                color = (_VertexColors[count] + _VertexColors[count + 1] + _VertexColors[count + 2]) / 3; 
                 break;
             }
+
+            count = count + 3;
         }
         if(intersects) {
+            _VoxelColor[u32(id.x + grid_data._GridWidth * (id.y + grid_data._GridHeight * id.z))] = vec4f( color );
             break;
         }
     }
+    var dummy : vec4f = _MeshesColor[0];
     
-    var w : f32;
     // 1.0 if intersects, 0.0 if doesn't
+    var w : f32;
     if (intersects) {
         w = 1.0;
     } else {
         w = 0.0;
     }
 
-    // if (id.x == 1 && id.y == 1 && id.z == 1) {
-    //     _VoxelGridPoints[u32(id.x + grid_data._GridWidth * (id.y + grid_data._GridHeight * id.z))] = vec4f(
-    //             center_global.xyz, 0.5);
-    //} else {
     _VoxelGridPoints[u32(id.x + grid_data._GridWidth * (id.y + grid_data._GridHeight * id.z))] = vec4f(
             center_pos.xyz, w);
-    //}
-
-
 }

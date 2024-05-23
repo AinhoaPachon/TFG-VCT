@@ -36,7 +36,7 @@ int VCTEngine::initialize(Renderer* renderer, GLFWwindow* window, bool use_glfw,
 
 	MeshInstance3D* monkey2 = parse_mesh("data/meshes/monkey.obj");
 	monkey2->scale(glm::vec3(1));
-	monkey2->translate(glm::vec3(2.0f, 0.0f, 0.0f));
+	monkey2->translate(glm::vec3(0.0f, 0.0f, -1.5f));
 	entities.push_back(monkey2);
 
 	//Surface* surface = monkey->get_surface(0);
@@ -52,17 +52,18 @@ int VCTEngine::initialize(Renderer* renderer, GLFWwindow* window, bool use_glfw,
 	material.color = glm::vec4(0.9f, 0.9f, 0.0f, 1.0f);
 	material.shader = RendererStorage::get_shader("data/shaders/mesh_pbr.wgsl", material);
 	material.flags = 1;
-	material.emissive = glm::vec3(0.6f, 0.2f, 0.45f);
+	//material.emissive = glm::vec3(0.6f, 0.2f, 0.45f);
 	monkey2->set_surface_material_override(monkey->get_surface(0), material);
 
 	voxelized_nodes.push_back(monkey);
 	voxelized_nodes.push_back(monkey2);
 
 	Light3D* light = new OmniLight3D();
-	light->set_intensity(5.0f);
-	light->set_translation(glm::vec3(2.0f, 2.0f, 2.0f));
+	light->set_intensity(1.0f);
+	light->set_translation(glm::vec3(0.0f, 0.0f, 2.0f));
 	light->set_color({ 1.0f, 1.0f, 1.0f });
-	light->set_range(5.0f);
+	light->set_range(15.0f);
+	light->set_cast_shadows(true);
 	entities.push_back(light);
 
 	//floor_grid_mesh->set_surface_material_override(floor_grid_mesh->get_surface(0), grid_material);
