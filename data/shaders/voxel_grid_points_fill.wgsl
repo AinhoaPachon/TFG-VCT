@@ -94,10 +94,13 @@ fn IntersectsTriangleAabb(tri_a: vec3f, tri_b: vec3f, tri_c: vec3f, aabb_center:
 @group(0) @binding(4) var<uniform> _MeshCount: u32;
 @group(0) @binding(5) var<storage, read_write> _VoxelColor: array<vec4f>;
 
+#ifdef MATERIAL_OVERRIDE_COLOR
 @group(0) @binding(6) var<storage, read_write> _MeshesColor: array<vec4f>;
+#endif
 
-
+#ifdef VERTEX_COLORS
 @group(0) @binding(7) var<storage, read_write> _VertexColors: array<vec4f>;
+#endif
 
 @compute @workgroup_size(4, 4, 4)
 fn compute(@builtin(global_invocation_id) id: vec3<u32>) {
@@ -139,7 +142,13 @@ fn compute(@builtin(global_invocation_id) id: vec3<u32>) {
             
             // Break loop when we find a triangle that intersects with the current voxel
             if(intersects) {
-                color = (_VertexColors[count] + _VertexColors[count + 1] + _VertexColors[count + 2]) / 3; 
+#ifdef MATERIAL_OVERRIDE_COLOR
+                color = _MeshesColor[j];
+#endif
+
+#ifdef VERTEX_COLORS
+                color = (_VertexColors[count] + _VertexColors[count + 1] + _VertexColors[count + 2]) / 3;
+#endif
                 break;
             }
 
@@ -150,7 +159,6 @@ fn compute(@builtin(global_invocation_id) id: vec3<u32>) {
             break;
         }
     }
-    var dummy : vec4f = _MeshesColor[0];
     
     // 1.0 if intersects, 0.0 if doesn't
     var w : f32;

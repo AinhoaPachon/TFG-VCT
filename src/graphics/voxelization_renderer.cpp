@@ -10,6 +10,7 @@
 #include "backends/imgui_impl_wgpu.h"
 
 #include "graphics/renderer_storage.h"
+#include "graphics/shader.h"
 #include "graphics/debug/renderdoc_capture.h"
 
 #include "framework/nodes/mesh_instance_3d.h"
@@ -31,8 +32,18 @@ int VoxelizationRenderer::initialize(std::vector<MeshInstance3D*> nodes)
 
 void VoxelizationRenderer::init_compute_voxelization(std::vector<MeshInstance3D*> nodes)
 {
+	std::vector<std::string> custom_specs; // = { "VERTEX_COLORS" };
+	
+	if (material_override_color) {
+		custom_specs.push_back("MATERIAL_OVERRIDE_COLOR");
+	}
+
+	if (vertex_color) {
+		custom_specs.push_back("VERTEX_COLORS");
+	}
+
 	// Get the voxelization Shader
-	voxelization_shader = RendererStorage::get_shader("data/shaders/voxel_grid_points_fill.wgsl");
+	voxelization_shader = RendererStorage::get_shader("data/shaders/voxel_grid_points_fill.wgsl", custom_specs);
 
 	WebGPUContext* webgpu_context = VCTRenderer::instance->get_webgpu_context();
 
@@ -175,7 +186,15 @@ void VoxelizationRenderer::init_bindings_voxelization_pipeline(std::vector<MeshI
 	voxel_vertexColorBuffer.buffer_size = sizeof(glm::vec4) * vertex_colors.size();
 	voxel_vertexColorBuffer.data = webgpu_context->create_buffer(voxel_vertexColorBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Storage, vertex_colors.data(), "vertex colors");
 
-	std::vector<Uniform*> uniforms = { &voxel_gridDataBuffer, &voxel_voxelGridPointsBuffer, &voxel_vertexPositionBuffer, &voxel_vertexCount, &voxel_meshCountBuffer, &voxel_voxelColorBuffer, &voxel_meshColorsBuffer, &voxel_vertexColorBuffer };
+	std::vector<Uniform*> uniforms = { &voxel_gridDataBuffer, &voxel_voxelGridPointsBuffer, &voxel_vertexPositionBuffer, &voxel_vertexCount, &voxel_meshCountBuffer, &voxel_voxelColorBuffer };
+	if (material_override_color) {
+		uniforms.push_back(&voxel_meshColorsBuffer);
+	}
+
+	if (vertex_color) {
+		uniforms.push_back(&voxel_vertexColorBuffer);
+	}
+	
 	voxelization_bindgroup = webgpu_context->create_bind_group(uniforms, voxelization_shader, 0);
 }
 

@@ -25,9 +25,8 @@ class VoxelizationRenderer {
         int grid_depth;
     } grid_data;
 
-    struct meshRepresentation {
-        glm::vec4 color;
-    } mesh_representation;
+    bool material_override_color = false;
+    bool vertex_color = true;
 
     struct voxelRepresentation {
         glm::vec4 position;
