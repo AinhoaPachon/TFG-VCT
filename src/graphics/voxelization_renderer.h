@@ -34,27 +34,31 @@ class VoxelizationRenderer {
     } voxel_representation;
 
     Pipeline		voxelization_pipeline;
-    Shader*         voxelization_shader = nullptr;
+    Shader* voxelization_shader = nullptr;
     WGPUBindGroup   voxelization_bindgroup = nullptr;
 
-    Shader*         render_voxelization_shader = nullptr;
+    Shader* render_voxelization_shader = nullptr;
 
     Uniform			voxel_gridDataBuffer;
     Uniform			voxel_voxelGridPointsBuffer;
     Uniform         voxel_vertexPositionBuffer;
     Uniform         voxel_vertexCount;
     Uniform         voxel_meshCountBuffer;
-    Uniform         voxel_meshColorsBuffer;
     Uniform         voxel_voxelColorBuffer;
+    Uniform         voxel_meshColorsBuffer;
     Uniform         voxel_vertexColorBuffer;
+
+    Uniform         colorBuffer;
+
+    Uniform         voxel_orthoProjectionMatrix;
 
     Uniform         voxel_cell_size;
 
     Pipeline		render_voxelization_pipeline;
     WGPUBindGroup   render_voxelization_bind_group = nullptr;
 
-    void init_compute_voxelization(std::vector<MeshInstance3D*> nodes);
-    void init_bindings_voxelization_pipeline(std::vector<MeshInstance3D*> nodes);
+    void init_compute_voxelization(std::vector<MeshInstance3D*> nodes, Camera* camera);
+    void init_bindings_voxelization_pipeline(std::vector<MeshInstance3D*> nodes, Camera* camera);
     void on_compute();
 
     void init_render_voxelization_pipeline();
@@ -62,7 +66,7 @@ class VoxelizationRenderer {
 public:
     VoxelizationRenderer();
 
-    int initialize(std::vector<MeshInstance3D*> nodes);
+    int initialize(std::vector<MeshInstance3D*> nodes, Camera* camera);
     void clean();
 
     void update(float delta_time);

@@ -54,7 +54,7 @@ int VCTRenderer::initialize(GLFWwindow* window, bool use_mirror_screen)
     camera_2d->set_orthographic(0.0f, w, 0.0f, h, -1.0f, 1.0f);
 
     uniforms = { &camera_2d_uniform };
-    render_bind_group_camera_2d = webgpu_context->create_bind_group(uniforms, RendererStorage::get_shader("data/shaders/mesh_color.wgsl"), 1);
+    render_bind_group_camera_2d = webgpu_context->create_bind_group(uniforms, RendererStorage::get_shader("data/shaders/mesh_pbr.wgsl"), 1);
 
     return 0;
 }
@@ -149,7 +149,7 @@ void VCTRenderer::render()
 
 void VCTRenderer::init_voxelization(std::vector<MeshInstance3D*> nodes)
 {
-    voxelization_renderer.initialize(nodes);
+    voxelization_renderer.initialize(nodes, camera_2d);
 }
 
 void VCTRenderer::render_screen(WGPUTextureView swapchain_view)

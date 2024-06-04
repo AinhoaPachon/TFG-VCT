@@ -93,14 +93,16 @@ fn IntersectsTriangleAabb(tri_a: vec3f, tri_b: vec3f, tri_c: vec3f, aabb_center:
 @group(0) @binding(3) var<storage, read_write> _VertexCount: array<u32>;
 @group(0) @binding(4) var<uniform> _MeshCount: u32;
 @group(0) @binding(5) var<storage, read_write> _VoxelColor: array<vec4f>;
+@group(0) @binding(6) var<storage, read_write> _orthogonalProjection: mat4x4f;
 
 #ifdef MATERIAL_OVERRIDE_COLOR
-@group(0) @binding(6) var<storage, read_write> _MeshesColor: array<vec4f>;
+@group(0) @binding(7) var<storage, read_write> _MeshesColor: array<vec4f>;
 #endif
 
 #ifdef VERTEX_COLORS
-@group(0) @binding(7) var<storage, read_write> _VertexColors: array<vec4f>;
+@group(0) @binding(8) var<storage, read_write> _VertexColors: array<vec4f>;
 #endif
+
 
 @compute @workgroup_size(4, 4, 4)
 fn compute(@builtin(global_invocation_id) id: vec3<u32>) {
@@ -127,6 +129,8 @@ fn compute(@builtin(global_invocation_id) id: vec3<u32>) {
     var count : u32 = 0;
 
     var color : vec4f;
+
+    var matrix : mat4x4f = _orthogonalProjection;
 
     // Number of meshes in the scene
     for(var j : u32 = 0; j < _MeshCount; j = j + 1) {

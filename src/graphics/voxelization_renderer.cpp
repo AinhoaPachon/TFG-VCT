@@ -20,9 +20,9 @@ VoxelizationRenderer::VoxelizationRenderer()
 {
 }
 
-int VoxelizationRenderer::initialize(std::vector<MeshInstance3D*> nodes)
+int VoxelizationRenderer::initialize(std::vector<MeshInstance3D*> nodes, Camera* camera)
 {
-	init_compute_voxelization(nodes);
+	init_compute_voxelization(nodes, camera);
 	on_compute();
 
 	init_render_voxelization_pipeline();
@@ -30,7 +30,7 @@ int VoxelizationRenderer::initialize(std::vector<MeshInstance3D*> nodes)
 	return 0;
 }
 
-void VoxelizationRenderer::init_compute_voxelization(std::vector<MeshInstance3D*> nodes)
+void VoxelizationRenderer::init_compute_voxelization(std::vector<MeshInstance3D*> nodes, Camera* camera)
 {
 	std::vector<std::string> custom_specs; // = { "VERTEX_COLORS" };
 	
@@ -48,12 +48,12 @@ void VoxelizationRenderer::init_compute_voxelization(std::vector<MeshInstance3D*
 	WebGPUContext* webgpu_context = VCTRenderer::instance->get_webgpu_context();
 
 	// Set bindings for the voxelization pipeline
-	init_bindings_voxelization_pipeline(nodes);
+	init_bindings_voxelization_pipeline(nodes, camera);
 
 	voxelization_pipeline.create_compute(voxelization_shader);
 }
 
-void VoxelizationRenderer::init_bindings_voxelization_pipeline(std::vector<MeshInstance3D*> nodes)
+void VoxelizationRenderer::init_bindings_voxelization_pipeline(std::vector<MeshInstance3D*> nodes, Camera* camera)
 {
 	RenderdocCapture::start_capture_frame();
 	WebGPUContext* webgpu_context = VCTRenderer::instance->get_webgpu_context();
@@ -176,17 +176,40 @@ void VoxelizationRenderer::init_bindings_voxelization_pipeline(std::vector<MeshI
 	voxel_voxelColorBuffer.buffer_size = sizeof(glm::vec4) * initial_color_values.size();
 	voxel_voxelColorBuffer.data = webgpu_context->create_buffer(voxel_voxelColorBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Storage, initial_color_values.data(), "color of voxels");
 
+	std::vector<glm::vec4> color_values;
+	for (int i = 0; i < webgpu_context->screen_width * webgpu_context->screen_height * 3; ++i) {
+		color_values.push_back(glm::vec4(0.0, 0.0, 0.0, 0.0));
+	}
+
+	colorBuffer.binding = 6;
+	colorBuffer.buffer_size = sizeof(float) * webgpu_context->screen_width * webgpu_context->screen_height * 4;
+	colorBuffer.data = webgpu_context->create_buffer(colorBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Storage, color_values.data(), "colors rasterizer");
+
+	//// MIRAR LOS VALORES INICIALIZADOS DE CAM POS
+	glm::vec3 off = grid_size_vec / 2.0f;
+
+	glm::vec3 cam_pos = camera->get_eye();
+	////cam_pos -= glm::mod(cam_pos, grid_data.cell_half_size * 2.0f);
+
+	camera->set_orthographic(cam_pos.x - off.x, cam_pos.x + off.x,
+		cam_pos.y - off.y, cam_pos.y + off.y,
+		cam_pos.z - off.z, cam_pos.z + off.z);
+
+	voxel_orthoProjectionMatrix.binding = 7;
+	voxel_orthoProjectionMatrix.buffer_size = sizeof(glm::mat4x4);
+	voxel_orthoProjectionMatrix.data = webgpu_context->create_buffer(voxel_orthoProjectionMatrix.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Storage, &camera->get_projection(), "orthogonal projection");
+
 	// Color of the material override
-	voxel_meshColorsBuffer.binding = 6;
+	voxel_meshColorsBuffer.binding = 8;
 	voxel_meshColorsBuffer.buffer_size = sizeof(glm::vec4) * material_colors.size();
 	voxel_meshColorsBuffer.data = webgpu_context->create_buffer(voxel_meshColorsBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Storage, material_colors.data(), "color of meshes");
 
 	// Vertex colors
-	voxel_vertexColorBuffer.binding = 7;
+	voxel_vertexColorBuffer.binding = 9;
 	voxel_vertexColorBuffer.buffer_size = sizeof(glm::vec4) * vertex_colors.size();
 	voxel_vertexColorBuffer.data = webgpu_context->create_buffer(voxel_vertexColorBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Storage, vertex_colors.data(), "vertex colors");
 
-	std::vector<Uniform*> uniforms = { &voxel_gridDataBuffer, &voxel_voxelGridPointsBuffer, &voxel_vertexPositionBuffer, &voxel_vertexCount, &voxel_meshCountBuffer, &voxel_voxelColorBuffer };
+	std::vector<Uniform*> uniforms = { &voxel_gridDataBuffer, &voxel_voxelGridPointsBuffer, &voxel_vertexPositionBuffer, &voxel_vertexCount, &voxel_meshCountBuffer, &voxel_voxelColorBuffer, &colorBuffer, &voxel_orthoProjectionMatrix };
 	if (material_override_color) {
 		uniforms.push_back(&voxel_meshColorsBuffer);
 	}
@@ -194,7 +217,7 @@ void VoxelizationRenderer::init_bindings_voxelization_pipeline(std::vector<MeshI
 	if (vertex_color) {
 		uniforms.push_back(&voxel_vertexColorBuffer);
 	}
-	
+
 	voxelization_bindgroup = webgpu_context->create_bind_group(uniforms, voxelization_shader, 0);
 }
 
@@ -221,9 +244,9 @@ void VoxelizationRenderer::on_compute()
 	w * h * d should be multiple of 32 */
 
 	// Ceil invocationCount / workgroupSize
-	glm::vec3 workgroup_size = glm::vec3(4, 4, 4);
-	glm::vec3 workgroup_count = glm::vec3(ceil(grid_data.grid_width / workgroup_size.x), ceil(grid_data.grid_height / workgroup_size.y), ceil(grid_data.grid_depth / workgroup_size.z));
-	wgpuComputePassEncoderDispatchWorkgroups(computePass, workgroup_count.x, workgroup_count.y, workgroup_count.z);
+	int workgroup_size = 256;
+	int workgroup_count = ceil(webgpu_context->screen_height * webgpu_context->screen_width / 256) ;
+	wgpuComputePassEncoderDispatchWorkgroups(computePass, workgroup_count, 1, 1);
 
 	wgpuComputePassEncoderEnd(computePass);
 
@@ -289,9 +312,11 @@ void VoxelizationRenderer::clean()
 	voxel_vertexCount.destroy();
 	voxel_meshCountBuffer.destroy();
 	voxel_cell_size.destroy();
-	voxel_meshColorsBuffer.destroy();
 	voxel_voxelColorBuffer.destroy();
+	voxel_meshColorsBuffer.destroy();
 	voxel_vertexColorBuffer.destroy();
+
+	voxel_orthoProjectionMatrix.destroy();
 
 	wgpuBindGroupRelease(voxelization_bindgroup);
 }
