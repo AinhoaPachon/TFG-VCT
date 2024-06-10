@@ -56,7 +56,7 @@ int VCTEngine::initialize(Renderer* renderer, GLFWwindow* window, bool use_glfw,
 	monkey2->set_surface_material_override(monkey->get_surface(0), material);
 
 	voxelized_nodes.push_back(monkey);
-	voxelized_nodes.push_back(monkey2);
+	//voxelized_nodes.push_back(monkey2);
 
 	Light3D* light = new OmniLight3D();
 	light->set_intensity(1.0f);

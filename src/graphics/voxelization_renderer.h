@@ -25,6 +25,11 @@ class VoxelizationRenderer {
         int grid_depth;
     } grid_data;
 
+    struct screenData {
+        int width;
+        int height;
+    } screen_data;
+
     bool material_override_color = false;
     bool vertex_color = true;
 
@@ -41,24 +46,27 @@ class VoxelizationRenderer {
 
     Uniform			voxel_gridDataBuffer;
     Uniform			voxel_voxelGridPointsBuffer;
-    Uniform         voxel_vertexPositionBuffer;
+    Uniform         voxel_vertexBuffer;
     Uniform         voxel_vertexCount;
     Uniform         voxel_meshCountBuffer;
     Uniform         voxel_voxelColorBuffer;
     Uniform         voxel_meshColorsBuffer;
     Uniform         voxel_vertexColorBuffer;
+    Uniform         voxel_orthoProjectionMatrix;
 
     Uniform         colorBuffer;
-
-    Uniform         voxel_orthoProjectionMatrix;
+    Uniform         screenDataBuffer;
+    Uniform         modelViewProjectionMatrix;
 
     Uniform         voxel_cell_size;
 
     Pipeline		render_voxelization_pipeline;
     WGPUBindGroup   render_voxelization_bind_group = nullptr;
+    WGPUBindGroup   voxelization_rasterizer_bind_group = nullptr;
 
     void init_compute_voxelization(std::vector<MeshInstance3D*> nodes, Camera* camera);
-    void init_bindings_voxelization_pipeline(std::vector<MeshInstance3D*> nodes, Camera* camera);
+    void init_bindings_voxelization_pipeline(std::vector<MeshInstance3D*> nodes);
+    void init_bindings_rasterizer(Camera* camera);
     void on_compute();
 
     void init_render_voxelization_pipeline();

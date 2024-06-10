@@ -1,124 +1,128 @@
-// Aquí tienen RWStructuredBuffer<float4> _VoxelGridPoints;
-// es el outputBuffer, donde meten los puntos del grid
+struct ColorBuffer {
+  values: array<atomic<u32>>,
+};
 
-struct GridData {
-    _BoundsMin : vec4f,
-    _CellHalfSize : f32,
-    _GridWidth : u32,
-    _GridHeight : u32,
-    _GridDepth : u32
+struct UBO {
+  screenWidth: f32,
+  screenHeight: f32,
+  modelViewProjectionMatrix: mat4x4<f32>,
+};
+
+struct Vertex { x: f32, y: f32, z: f32, };
+
+struct VertexBuffer {
+  values: array<Vertex>,
+};
+
+@group(0) @binding(0) var<storage, read_write> outputColorBuffer : ColorBuffer;
+@group(0) @binding(1) var<storage, read> vertexBuffer : VertexBuffer;
+@group(0) @binding(2) var<uniform> uniforms : UBO;
+
+// From: https://github.com/ssloy/tinyrenderer/wiki/Lesson-2:-Triangle-rasterization-and-back-face-culling
+fn barycentric(v1: vec3<f32>, v2: vec3<f32>, v3: vec3<f32>, p: vec2<f32>) -> vec3<f32> {
+    let u = cross(
+        vec3<f32>(v3.x - v1.x, v2.x - v1.x, v1.x - p.x), 
+        vec3<f32>(v3.y - v1.y, v2.y - v1.y, v1.y - p.y)
+    );
+
+    if (abs(u.z) < 1.0) {
+        return vec3<f32>(-1.0, 1.0, 1.0);
+    }
+
+    return vec3<f32>(1.0 - (u.x+u.y)/u.z, u.y/u.z, u.x/u.z); 
 }
 
-@group(0) @binding(0) var<uniform> grid_data: GridData;
-@group(0) @binding(1) var<storage, read_write> _VoxelGridPoints: array<vec4f>;
-@group(0) @binding(2) var<storage, read_write> _MeshesVertices: array<vec4f>;
-@group(0) @binding(3) var<storage, read_write> _VertexCount: array<u32>;
-@group(0) @binding(4) var<uniform> _MeshCount: u32;
-@group(0) @binding(5) var<storage, read_write> _VoxelColor: array<vec4f>;
-@group(0) @binding(6) var<storage, read_write> _colorBuffer: array<vec4f>;
-@group(0) @binding(7) var<storage, read_write> _orthogonalProjection: mat4x4f;
+fn get_min_max(v1: vec3<f32>, v2: vec3<f32>, v3: vec3<f32>) -> vec4<f32> {
+    var min_max = vec4<f32>();
+    min_max.x = min(min(v1.x, v2.x), v3.x);
+    min_max.y = min(min(v1.y, v2.y), v3.y);
+    min_max.z = max(max(v1.x, v2.x), v3.x);
+    min_max.w = max(max(v1.y, v2.y), v3.y);
 
-#ifdef MATERIAL_OVERRIDE_COLOR
-@group(0) @binding(8) var<storage, read_write> _MeshesColor: array<vec4f>;
-#endif
+    return min_max;
+}
 
-#ifdef VERTEX_COLORS
-@group(0) @binding(9) var<storage, read_write> _VertexColors: array<vec4f>;
-#endif
+fn color_pixel(x: u32, y: u32, r: u32, g: u32, b: u32) {
+    let pixelID = u32(x + y * u32(uniforms.screenWidth)) * 3u;
+  
+    atomicMin(&outputColorBuffer.values[pixelID + 0u], r);
+    atomicMin(&outputColorBuffer.values[pixelID + 1u], g);
+    atomicMin(&outputColorBuffer.values[pixelID + 2u], b);
+}
 
+fn draw_triangle(v1: vec3<f32>, v2: vec3<f32>, v3: vec3<f32>) {
+    let min_max = get_min_max(v1, v2, v3);
+    let startX = u32(min_max.x);
+    let startY = u32(min_max.y);
+    let endX = u32(min_max.z);
+    let endY = u32(min_max.w);
 
-@compute @workgroup_size(256, 1, 1)
-fn compute(@builtin(global_invocation_id) id: vec3<u32>, @builtin(position) coord: vec4f<f32>) {
-    
-    let X = floor(coord.x);
-    let Y = floor(coord.y);
-    let index = u32(X + Y * uniforms.screenWidth) * 3u;//Multiply by 3 because we have 3 components, RGB.
-    
+    for (var x: u32 = startX; x <= endX; x = x + 1u) {
+        for (var y: u32 = startY; y <= endY; y = y + 1u) {
+            let bc = barycentric(v1, v2, v3, vec2<f32>(f32(x), f32(y))); 
+            let color = (bc.x * v1.z + bc.y * v2.z + bc.z * v3.z) * 50.0 - 400.0;
 
-    let cellSize : f32 = grid_data._CellHalfSize * 2.0;
-    
-    // center of the current voxel
-    let center_pos : vec3f = vec3f(
-        f32(id.x) * cellSize + grid_data._CellHalfSize + grid_data._BoundsMin.x,
-        f32(id.y) * cellSize + grid_data._CellHalfSize + grid_data._BoundsMin.y,
-        f32(id.z) * cellSize + grid_data._CellHalfSize + grid_data._BoundsMin.z);
+            let R = color;
+            let G = color;
+            let B = color;
 
-    let aabb_center : vec3f = center_pos;
-    let aabb_extents: vec3f = vec3f(grid_data._CellHalfSize);
-
-    var intersects : bool;
-    var tri_a : vec3f;
-    var tri_b : vec3f;
-    var tri_c : vec3f;
-    var count : u32 = 0;
-
-    var color : vec4f;
-    
-    var vertices_projected : array<vec4f> = _MeshesVertices;
-
-    // Number of meshes in the scene
-    for(var j : u32 = 0; j < _MeshCount; j = j + 1) {
-        // Number of vertices a mesh has
-        for(var i : u32 = 0; i < _VertexCount[j]; i = i + 3) {
-            // Get a triangle projected
-            tri_a = _orthogonalProjection * _MeshesVertices[count].xyz;
-            tri_b = _orthogonalProjection * _MeshesVertices[count + 1].xyz;
-            tri_c = _orthogonalProjection * _MeshesVertices[count + 2].xyz;
-
-            var projection : vec3f = abs(cross( tri_b - tri_a, tri_c - tri_a ));
-
-            if (projection.x > projection.y && projection.x > projection.z){
-                vertices_projected[count] = vec4f( tri_a.yz, 0, 1);
-                vertices_projected[count + 1] = vec4f( tri_b.yz, 0, 1);
-                vertices_projected[count + 2] = vec4f( tri_c.yz, 0, 1);
-
-            } else if ( projection.y > projection.z ) {
-                vertices_projected[count] = vec4f( tri_a.xz, 0, 1);
-                vertices_projected[count + 1] = vec4f( tri_b.xz, 0, 1);
-                vertices_projected[count + 2] = vec4f( tri_c.xz, 0, 1);
-
-            } else {
-                vertices_projected[count] = vec4f( tri_a.xy, 0, 1);
-                vertices_projected[count + 1] = vec4f( tri_b.xy, 0, 1);
-                vertices_projected[count + 2] = vec4f( tri_c.xy, 0, 1);
+            if (bc.x < 0.0 || bc.y < 0.0 || bc.z < 0.0) {
+                continue;
             }
-        
-
-
-
-
-
-            // Check intersection
-            intersects = IntersectsTriangleAabb(tri_a, tri_b, tri_c, aabb_center, aabb_extents);
-            
-            // Break loop when we find a triangle that intersects with the current voxel
-            if(intersects) {
-#ifdef MATERIAL_OVERRIDE_COLOR
-                color = _MeshesColor[j];
-#endif
-
-#ifdef VERTEX_COLORS
-                color = (_VertexColors[count] + _VertexColors[count + 1] + _VertexColors[count + 2]) / 3;
-#endif
-                break;
-            }
-
-            count = count + 3;
-        }
-        if(intersects) {
-            _VoxelColor[u32(id.x + grid_data._GridWidth * (id.y + grid_data._GridHeight * id.z))] = vec4f( color );
-            break;
+            color_pixel(x, y, u32(R), u32(G), u32(B));
         }
     }
-    
-    // 1.0 if intersects, 0.0 if doesn't
-    var w : f32;
-    if (intersects) {
-        w = 1.0;
-    } else {
-        w = 0.0;
+}
+
+fn draw_line(v1: vec3<f32>, v2: vec3<f32>) {
+    let v1Vec = vec2<f32>(v1.x, v1.y);
+    let v2Vec = vec2<f32>(v2.x, v2.y);
+
+    let dist = i32(distance(v1Vec, v2Vec));
+    for (var i = 0; i < dist; i = i + 1) {
+        let x = u32(v1.x + f32(v2.x - v1.x) * (f32(i) / f32(dist)));
+        let y = u32(v1.y + f32(v2.y - v1.y) * (f32(i) / f32(dist)));
+        color_pixel(x, y, 255u, 255u, 255u);
+    }
+}
+
+fn project(v: Vertex) -> vec3<f32> {
+    var screenPos = uniforms.modelViewProjectionMatrix * vec4<f32>(v.x, v.y, v.z, 1.0);
+    screenPos.x = (screenPos.x / screenPos.w) * uniforms.screenWidth;
+    screenPos.y = (screenPos.y / screenPos.w) * uniforms.screenHeight;
+
+    return vec3<f32>(screenPos.x, screenPos.y, screenPos.w);
+}
+
+fn is_off_screen(v: vec3<f32>) -> bool {
+    if (v.x < 0.0 || v.x > uniforms.screenWidth || v.y < 0.0 || v.y > uniforms.screenHeight) {
+        return true;
     }
 
-    _VoxelGridPoints[u32(id.x + grid_data._GridWidth * (id.y + grid_data._GridHeight * id.z))] = vec4f(
-            center_pos.xyz, w);
+    return false;
+}
+
+@compute @workgroup_size(256, 1)
+fn main(@builtin(global_invocation_id) global_id : vec3<u32>) {
+    let index = global_id.x * 3u;
+
+    let v1 = project(vertexBuffer.values[index + 0u]);
+    let v2 = project(vertexBuffer.values[index + 1u]);
+    let v3 = project(vertexBuffer.values[index + 2u]);
+
+    if (is_off_screen(v1) || is_off_screen(v2) || is_off_screen(v3)) {
+        return;
+    }
+
+    draw_triangle(v1, v2, v3);
+}
+
+
+@compute @workgroup_size(256, 1)
+fn clear(@builtin(global_invocation_id) global_id : vec3<u32>) {
+    let index = global_id.x * 3u;
+
+    atomicStore(&outputColorBuffer.values[index + 0u], 255u);
+    atomicStore(&outputColorBuffer.values[index + 1u], 255u);
+    atomicStore(&outputColorBuffer.values[index + 2u], 255u);
 }
