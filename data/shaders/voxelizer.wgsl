@@ -2,21 +2,44 @@ struct ColorBuffer {
   values: array<atomic<u32>>,
 };
 
+struct GridData {
+    _BoundsMin : vec4f,
+    _CellHalfSize : f32,
+    _GridWidth : u32,
+    _GridHeight : u32,
+    _GridDepth : u32
+}
+
 struct UBO {
-  screenWidth: f32,
-  screenHeight: f32,
-  modelViewProjectionMatrix: mat4x4<f32>,
+    screenWidth: f32,
+    screenHeight: f32,
+    modelViewProjectionMatrix: mat4x4<f32>,
 };
 
-struct Vertex { x: f32, y: f32, z: f32, };
+struct Vertex { 
+    position: vec3f,
+    uv: vec2f,
+    normal: vec3f,
+    tangent: vec3f,
+    color: vec3f,
+    weights: vec4f,
+    joints: vec4f
+};
 
 struct VertexBuffer {
-  values: array<Vertex>,
+    values: array<Vertex>,
 };
+                                 
 
 @group(0) @binding(0) var<storage, read_write> outputColorBuffer : ColorBuffer;
 @group(0) @binding(1) var<storage, read> vertexBuffer : VertexBuffer;
 @group(0) @binding(2) var<uniform> uniforms : UBO;
+
+@group(0) @binding(0) var<uniform> grid_data: GridData;
+@group(0) @binding(1) var<storage, read_write> _VoxelGridPoints: array<vec4f>;
+@group(0) @binding(2) var<storage, read_write> _VertexBuffer: VertexBuffer;
+@group(0) @binding(4) var<uniform> _MeshCount: u32;
+@group(0) @binding(5) var<storage, read_write> _VoxelColor: array<vec4f>;
 
 // From: https://github.com/ssloy/tinyrenderer/wiki/Lesson-2:-Triangle-rasterization-and-back-face-culling
 fn barycentric(v1: vec3<f32>, v2: vec3<f32>, v3: vec3<f32>, p: vec2<f32>) -> vec3<f32> {
@@ -106,9 +129,9 @@ fn is_off_screen(v: vec3<f32>) -> bool {
 fn main(@builtin(global_invocation_id) global_id : vec3<u32>) {
     let index = global_id.x * 3u;
 
-    let v1 = project(vertexBuffer.values[index + 0u]);
-    let v2 = project(vertexBuffer.values[index + 1u]);
-    let v3 = project(vertexBuffer.values[index + 2u]);
+    let v1 = project(vertexBuffer.values[index + 0u].position);
+    let v2 = project(vertexBuffer.values[index + 1u].position);
+    let v3 = project(vertexBuffer.values[index + 2u].position);
 
     if (is_off_screen(v1) || is_off_screen(v2) || is_off_screen(v3)) {
         return;

@@ -9,6 +9,20 @@ struct GridData {
     _GridDepth : u32
 }
 
+struct Vertex { 
+    position: vec3f,
+    uv: vec2f,
+    normal: vec3f,
+    tangent: vec3f,
+    color: vec3f,
+    weights: vec4f,
+    joints: vec4f
+};
+
+struct VertexBuffer {
+    values: array<Vertex>,
+};
+
 fn IntersectsTriangleAabbSat(v0: vec3f, v1: vec3f, v2: vec3f, aabb_extents: vec3f, axis: vec3f) -> bool
 {
     // Project each triangle vertex onto the axis
@@ -89,10 +103,10 @@ fn IntersectsTriangleAabb(tri_a: vec3f, tri_b: vec3f, tri_c: vec3f, aabb_center:
 
 @group(0) @binding(0) var<uniform> grid_data: GridData;
 @group(0) @binding(1) var<storage, read_write> _VoxelGridPoints: array<vec4f>;
-@group(0) @binding(2) var<storage, read_write> _MeshVertexPositions: array<vec4f>;
-@group(0) @binding(3) var<storage, read_write> _VertexCount: array<u32>;
+@group(0) @binding(2) var<storage, read_write> _VertexBuffer: VertexBuffer;
 @group(0) @binding(4) var<uniform> _MeshCount: u32;
 @group(0) @binding(5) var<storage, read_write> _VoxelColor: array<vec4f>;
+
 @group(0) @binding(6) var<storage, read_write> _orthogonalProjection: mat4x4f;
 
 #ifdef MATERIAL_OVERRIDE_COLOR
@@ -135,7 +149,7 @@ fn compute(@builtin(global_invocation_id) id: vec3<u32>) {
     // Number of meshes in the scene
     for(var j : u32 = 0; j < _MeshCount; j = j + 1) {
         // Number of vertices a mesh has
-        for(var i : u32 = 0; i < _VertexCount[j]; i = i + 3) {
+        for(var i : u32 = 0; i < _VertexBuffer.values.length(); i = i + 3) {
             // Get a triangle
             tri_a = _MeshVertexPositions[count].xyz;
             tri_b = _MeshVertexPositions[count + 1].xyz;

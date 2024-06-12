@@ -61,10 +61,7 @@ void VoxelizationRenderer::init_bindings_voxelization_pipeline(std::vector<MeshI
 	AABB scene_aabb;
 	AABB aabb;
 	Surface* surface;
-	std::vector<glm::vec4> vertex_positions;
-	std::vector<glm::vec4> vertex_colors;
 	std::vector<glm::mat4x4> models;
-	std::vector<int> vertex_count;
 	std::vector<glm::vec4> material_colors;
 
 	// Bounds of the scene bounding box
@@ -111,17 +108,6 @@ void VoxelizationRenderer::init_bindings_voxelization_pipeline(std::vector<MeshI
 			max_pos.z = aabb_max.z;
 		}
 
-		// Get the vertices from the node
-		auto& vertices = surface->get_vertices();
-
-		for (int i = 0; i < vertices.size(); i++) {
-			vertex_positions.push_back(node->get_model() * glm::vec4(vertices[i].position, 1.0));
-			vertex_colors.push_back(glm::vec4(vertices[i].color, 1.0));
-		}
-
-		// Get the amount of vertices a node has
-		vertex_count.push_back(surface->get_vertex_count());
-
 		// Node color
 		Material* material = node->get_surface_material_override(surface);
 		material_colors.push_back(material->color);
@@ -154,45 +140,34 @@ void VoxelizationRenderer::init_bindings_voxelization_pipeline(std::vector<MeshI
 	voxel_voxelGridPointsBuffer.buffer_size = sizeof(glm::vec4) * grid_data.grid_width * grid_data.grid_height * grid_data.grid_depth;
 	voxel_voxelGridPointsBuffer.data = webgpu_context->create_buffer(voxel_voxelGridPointsBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Storage, initial_position_values.data(), "grid points buffer");
 
+	Surface* surface = nodes[0]->get_surface(0);
+	WGPUBuffer vertex_buffer = surface->get_vertex_buffer();
+
 	// Positions of the vertices
 	voxel_vertexBuffer.binding = 2;
-	voxel_vertexBuffer.buffer_size = sizeof(glm::vec4) * vertex_positions.size();
-	voxel_vertexBuffer.data = webgpu_context->create_buffer(voxel_vertexBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Storage, vertex_positions.data(), "vertex positions");
-
-	// Amount of vertices in each entity
-	voxel_vertexCount.binding = 3;
-	voxel_vertexCount.buffer_size = sizeof(int) * vertex_count.size();
-	voxel_vertexCount.data = webgpu_context->create_buffer(voxel_vertexCount.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Storage, vertex_count.data(), "vertex count");
+	voxel_vertexBuffer.buffer_size = sizeof(InterleavedData) * surface->get_vertices().size();
+	voxel_vertexBuffer.data = vertex_buffer;
 
 	// Number of nodes
 	int number_nodes = nodes.size();
-	voxel_meshCountBuffer.binding = 4;
+	voxel_meshCountBuffer.binding = 3;
 	voxel_meshCountBuffer.buffer_size = sizeof(int) * number_nodes;
 	voxel_meshCountBuffer.data = webgpu_context->create_buffer(voxel_meshCountBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Uniform, &number_nodes, "number of meshes");
 
 	// Color of each voxel
 	std::vector<glm::vec4> initial_color_values = initial_position_values;
-	voxel_voxelColorBuffer.binding = 5;
+	voxel_voxelColorBuffer.binding = 4;
 	voxel_voxelColorBuffer.buffer_size = sizeof(glm::vec4) * initial_color_values.size();
 	voxel_voxelColorBuffer.data = webgpu_context->create_buffer(voxel_voxelColorBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Storage, initial_color_values.data(), "color of voxels");
 
 	// Color of the material override
-	voxel_meshColorsBuffer.binding = 6;
+	voxel_meshColorsBuffer.binding = 5;
 	voxel_meshColorsBuffer.buffer_size = sizeof(glm::vec4) * material_colors.size();
 	voxel_meshColorsBuffer.data = webgpu_context->create_buffer(voxel_meshColorsBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Storage, material_colors.data(), "color of meshes");
 
-	// Vertex colors
-	voxel_vertexColorBuffer.binding = 7;
-	voxel_vertexColorBuffer.buffer_size = sizeof(glm::vec4) * vertex_colors.size();
-	voxel_vertexColorBuffer.data = webgpu_context->create_buffer(voxel_vertexColorBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Storage, vertex_colors.data(), "vertex colors");
-
-	std::vector<Uniform*> uniforms = { &voxel_gridDataBuffer, &voxel_voxelGridPointsBuffer, &voxel_vertexBuffer, &voxel_vertexCount, &voxel_meshCountBuffer, &voxel_voxelColorBuffer };
+	std::vector<Uniform*> uniforms = { &voxel_gridDataBuffer, &voxel_voxelGridPointsBuffer, &voxel_vertexBuffer, &voxel_meshCountBuffer, &voxel_voxelColorBuffer, &voxel_meshColorsBuffer };
 	if (material_override_color) {
 		uniforms.push_back(&voxel_meshColorsBuffer);
-	}
-
-	if (vertex_color) {
-		uniforms.push_back(&voxel_vertexColorBuffer);
 	}
 
 	voxelization_bindgroup = webgpu_context->create_bind_group(uniforms, voxelization_shader, 0);
