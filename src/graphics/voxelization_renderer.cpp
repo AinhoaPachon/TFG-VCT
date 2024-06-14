@@ -43,17 +43,19 @@ void VoxelizationRenderer::init_compute_voxelization(std::vector<MeshInstance3D*
 	}
 
 	// Get the voxelization Shader
-	voxelization_shader = RendererStorage::get_shader("data/shaders/voxel_grid_points_fill.wgsl", custom_specs);
+	//voxelization_shader = RendererStorage::get_shader("data/shaders/voxel_grid_points_fill.wgsl", custom_specs);
+	voxelization_shader = RendererStorage::get_shader("data/shaders/voxelizer.wgsl", custom_specs);
 
 	WebGPUContext* webgpu_context = VCTRenderer::instance->get_webgpu_context();
 
 	// Set bindings for the voxelization pipeline
-	init_bindings_voxelization_pipeline(nodes);
+	init_bindings_voxelization_pipeline(nodes, camera);
+	init_bindings_rasterizer(nodes, camera);
 
 	voxelization_pipeline.create_compute(voxelization_shader);
 }
 
-void VoxelizationRenderer::init_bindings_voxelization_pipeline(std::vector<MeshInstance3D*> nodes)
+void VoxelizationRenderer::init_bindings_voxelization_pipeline(std::vector<MeshInstance3D*> nodes, Camera* camera)
 {
 	RenderdocCapture::start_capture_frame();
 	WebGPUContext* webgpu_context = VCTRenderer::instance->get_webgpu_context();
@@ -139,15 +141,8 @@ void VoxelizationRenderer::init_bindings_voxelization_pipeline(std::vector<MeshI
 	voxel_voxelGridPointsBuffer.binding = 1;
 	voxel_voxelGridPointsBuffer.buffer_size = sizeof(glm::vec4) * grid_data.grid_width * grid_data.grid_height * grid_data.grid_depth;
 	voxel_voxelGridPointsBuffer.data = webgpu_context->create_buffer(voxel_voxelGridPointsBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Storage, initial_position_values.data(), "grid points buffer");
-
-	Surface* surface = nodes[0]->get_surface(0);
-	WGPUBuffer vertex_buffer = surface->get_vertex_buffer();
-
-	// Positions of the vertices
-	voxel_vertexBuffer.binding = 2;
-	voxel_vertexBuffer.buffer_size = sizeof(InterleavedData) * surface->get_vertices().size();
-	voxel_vertexBuffer.data = vertex_buffer;
-
+	
+	/*
 	// Number of nodes
 	int number_nodes = nodes.size();
 	voxel_meshCountBuffer.binding = 3;
@@ -169,11 +164,16 @@ void VoxelizationRenderer::init_bindings_voxelization_pipeline(std::vector<MeshI
 	if (material_override_color) {
 		uniforms.push_back(&voxel_meshColorsBuffer);
 	}
+	
+	
 
-	voxelization_bindgroup = webgpu_context->create_bind_group(uniforms, voxelization_shader, 0);
+	std::vector<Uniform*> uniforms = {};
+	*/
+	
+	//voxelization_bindgroup = webgpu_context->create_bind_group(uniforms, voxelization_shader, 0);
 }
 
-void VoxelizationRenderer::init_bindings_rasterizer(Camera* camera)
+void VoxelizationRenderer::init_bindings_rasterizer(std::vector<MeshInstance3D*> nodes, Camera* camera)
 {
 	WebGPUContext* webgpu_context = VCTRenderer::instance->get_webgpu_context();
 
@@ -186,6 +186,19 @@ void VoxelizationRenderer::init_bindings_rasterizer(Camera* camera)
 	colorBuffer.buffer_size = sizeof(float) * webgpu_context->screen_width * webgpu_context->screen_height * 4;
 	colorBuffer.data = webgpu_context->create_buffer(colorBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Storage, color_values.data(), "colors rasterizer");
 
+	Surface* surface = nodes[0]->get_surface(0);
+	WGPUBuffer vertex_buffer = surface->get_vertex_buffer();
+
+	// Positions of the vertices
+	voxel_vertexBuffer.binding = 1;
+	voxel_vertexBuffer.buffer_size = sizeof(InterleavedData) * surface->get_vertices().size();
+	voxel_vertexBuffer.data = vertex_buffer;
+
+	int vertex_count = surface->get_vertex_count();
+	voxel_vertexCount.binding = 2;
+	voxel_vertexCount.buffer_size = sizeof(int);
+	voxel_vertexCount.data = webgpu_context->create_buffer(voxel_vertexCount.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Storage, &vertex_count, "uniforms, view projection matrix");
+
 	//// MIRAR LOS VALORES INICIALIZADOS DE CAM POS
 	glm::vec3 off = glm::vec3(grid_data.grid_width, grid_data.grid_height, grid_data.grid_depth) / 2.0f;
 
@@ -196,16 +209,16 @@ void VoxelizationRenderer::init_bindings_rasterizer(Camera* camera)
 		cam_pos.y - off.y, cam_pos.y + off.y,
 		cam_pos.z - off.z, cam_pos.z + off.z);
 
-	voxel_orthoProjectionMatrix.binding = 1;
-	voxel_orthoProjectionMatrix.buffer_size = sizeof(glm::mat4x4);
-	voxel_orthoProjectionMatrix.data = webgpu_context->create_buffer(voxel_orthoProjectionMatrix.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Storage, &camera->get_projection(), "orthogonal projection");
+	voxelizer_uniforms.width = webgpu_context->screen_width;
+	voxelizer_uniforms.height = webgpu_context->screen_height;
+	voxelizer_uniforms.modelViewProjectionMatrix = camera->get_view_projection() * nodes[0]->get_global_model();
 
-	modelViewProjectionMatrix.binding = 2;
-	modelViewProjectionMatrix.buffer_size = sizeof(glm::vec4);
-	modelViewProjectionMatrix.data = webgpu_context->create_buffer(modelViewProjectionMatrix.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Storage, &camera->get_view_projection(), "view projection matrix");
+	uniformsBuffer.binding = 3;
+	uniformsBuffer.buffer_size = sizeof(UBO);
+	uniformsBuffer.data = webgpu_context->create_buffer(uniformsBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Uniform, &voxelizer_uniforms, "uniforms, view projection matrix");
 
-	std::vector<Uniform*> uniforms = { &colorBuffer, &voxel_orthoProjectionMatrix, &modelViewProjectionMatrix };
-	voxelization_bindgroup = webgpu_context->create_bind_group(uniforms, voxelization_shader, 1);
+	std::vector<Uniform*> uniforms = { &colorBuffer, &voxel_vertexBuffer, &voxel_vertexCount, &uniformsBuffer };
+	voxelization_bindgroup = webgpu_context->create_bind_group(uniforms, voxelization_shader, 0);
 }
 
 void VoxelizationRenderer::on_compute()
@@ -302,10 +315,9 @@ void VoxelizationRenderer::clean()
 	voxel_voxelColorBuffer.destroy();
 	voxel_meshColorsBuffer.destroy();
 	voxel_vertexColorBuffer.destroy();
-	voxel_orthoProjectionMatrix.destroy();
+
 	colorBuffer.destroy();
-	screenDataBuffer.destroy();
-	modelViewProjectionMatrix.destroy();
+	uniformsBuffer.destroy();
 
 	wgpuBindGroupRelease(voxelization_bindgroup);
 }

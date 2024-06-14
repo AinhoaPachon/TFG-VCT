@@ -149,7 +149,7 @@ fn compute(@builtin(global_invocation_id) id: vec3<u32>) {
     // Number of meshes in the scene
     for(var j : u32 = 0; j < _MeshCount; j = j + 1) {
         // Number of vertices a mesh has
-        for(var i : u32 = 0; i < _VertexBuffer.values.length(); i = i + 3) {
+        for(var i : u32 = 0; i < _VertexBuffer.values; i = i + 3) {
             // Get a triangle
             tri_a = _MeshVertexPositions[count].xyz;
             tri_b = _MeshVertexPositions[count + 1].xyz;
