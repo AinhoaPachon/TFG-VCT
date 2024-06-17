@@ -1,3 +1,5 @@
+#include mesh_includes.wgsl
+
 struct ColorBuffer {
   values: array<atomic<u32>>,
 };
@@ -11,9 +13,9 @@ struct GridData {
 }
 
 struct UBO {
-    screenWidth: f32,
-    screenHeight: f32,
-    modelViewProjectionMatrix: mat4x4<f32>,
+    screenWidth: u32,
+    screenHeight: u32,
+    modelViewProjectionMatrix: mat4x4<f32>
 };
 
 struct Vertex { 
@@ -66,7 +68,7 @@ fn get_min_max(v1: vec3<f32>, v2: vec3<f32>, v3: vec3<f32>) -> vec4<f32> {
 }
 
 fn color_pixel(x: u32, y: u32, r: u32, g: u32, b: u32) {
-    let pixelID = u32(x + y * u32(uniforms.screenWidth)) * 3u;
+    let pixelID = u32(x + y * uniforms.screenWidth * 3u);
   
     atomicMin(&outputColorBuffer.values[pixelID + 0u], r);
     atomicMin(&outputColorBuffer.values[pixelID + 1u], g);
@@ -112,14 +114,14 @@ fn draw_line(v1: vec3<f32>, v2: vec3<f32>) {
 fn project(v: Vertex) -> vec3<f32> {
     var position : vec3f = v.position;
     var screenPos = uniforms.modelViewProjectionMatrix * vec4<f32>(position, 1.0);
-    screenPos.x = (screenPos.x / screenPos.w) * uniforms.screenWidth;
-    screenPos.y = (screenPos.y / screenPos.w) * uniforms.screenHeight;
+    screenPos.x = (screenPos.x / screenPos.w) * f32(uniforms.screenWidth);
+    screenPos.y = (screenPos.y / screenPos.w) * f32(uniforms.screenHeight);
 
     return vec3<f32>(screenPos.x, screenPos.y, screenPos.w);
 }
 
 fn is_off_screen(v: vec3<f32>) -> bool {
-    if (v.x < 0.0 || v.x > uniforms.screenWidth || v.y < 0.0 || v.y > uniforms.screenHeight) {
+    if (v.x < 0.0 || v.x > f32(uniforms.screenWidth) || v.y < 0.0 || v.y > f32(uniforms.screenHeight)) {
         return true;
     }
 
@@ -127,7 +129,7 @@ fn is_off_screen(v: vec3<f32>) -> bool {
 }
 
 @compute @workgroup_size(256, 1)
-fn main(@builtin(global_invocation_id) global_id : vec3<u32>) {
+fn compute(@builtin(global_invocation_id) global_id : vec3<u32>) {
     let index = global_id.x * 3u;
 
     let v1 = project(vertexBuffer.values[index + 0u]);
@@ -137,6 +139,8 @@ fn main(@builtin(global_invocation_id) global_id : vec3<u32>) {
     if (is_off_screen(v1) || is_off_screen(v2) || is_off_screen(v3)) {
         return;
     }
+
+    var vertex_count : u32 = vertexCount;
 
     draw_triangle(v1, v2, v3);
 }

@@ -189,15 +189,17 @@ void VoxelizationRenderer::init_bindings_rasterizer(std::vector<MeshInstance3D*>
 	Surface* surface = nodes[0]->get_surface(0);
 	WGPUBuffer vertex_buffer = surface->get_vertex_buffer();
 
+	std::vector<InterleavedData> vertices = surface->get_vertices();
+
 	// Positions of the vertices
 	voxel_vertexBuffer.binding = 1;
-	voxel_vertexBuffer.buffer_size = sizeof(InterleavedData) * surface->get_vertices().size();
-	voxel_vertexBuffer.data = vertex_buffer;
+	voxel_vertexBuffer.buffer_size = sizeof(InterleavedData) * vertices.size();
+	voxel_vertexBuffer.data = webgpu_context->create_buffer(voxel_vertexBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Storage, vertices.data(), "vertex buffer");
 
 	int vertex_count = surface->get_vertex_count();
 	voxel_vertexCount.binding = 2;
 	voxel_vertexCount.buffer_size = sizeof(int);
-	voxel_vertexCount.data = webgpu_context->create_buffer(voxel_vertexCount.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Storage, &vertex_count, "uniforms, view projection matrix");
+	voxel_vertexCount.data = webgpu_context->create_buffer(voxel_vertexCount.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Storage, &vertex_count, "vertex count");
 
 	//// MIRAR LOS VALORES INICIALIZADOS DE CAM POS
 	glm::vec3 off = glm::vec3(grid_data.grid_width, grid_data.grid_height, grid_data.grid_depth) / 2.0f;
@@ -214,8 +216,8 @@ void VoxelizationRenderer::init_bindings_rasterizer(std::vector<MeshInstance3D*>
 	voxelizer_uniforms.modelViewProjectionMatrix = camera->get_view_projection() * nodes[0]->get_global_model();
 
 	uniformsBuffer.binding = 3;
-	uniformsBuffer.buffer_size = sizeof(UBO);
-	uniformsBuffer.data = webgpu_context->create_buffer(uniformsBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Uniform, &voxelizer_uniforms, "uniforms, view projection matrix");
+	uniformsBuffer.buffer_size = sizeof(UBO) + 8;
+	uniformsBuffer.data = webgpu_context->create_buffer(uniformsBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Uniform, &voxelizer_uniforms, "uniforms");
 
 	std::vector<Uniform*> uniforms = { &colorBuffer, &voxel_vertexBuffer, &voxel_vertexCount, &uniformsBuffer };
 	voxelization_bindgroup = webgpu_context->create_bind_group(uniforms, voxelization_shader, 0);
