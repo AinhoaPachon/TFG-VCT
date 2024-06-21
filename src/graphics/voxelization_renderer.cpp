@@ -265,6 +265,8 @@ void VoxelizationRenderer::on_compute()
 
 void VoxelizationRenderer::init_render_voxelization_pipeline()
 {
+	// SAME AS RENDER MIRROR IN VCT RENDERER!
+
 	sphere_mesh = parse_mesh("data/meshes/cube.obj");
 
 	WebGPUContext* webgpu_context = VCTRenderer::instance->get_webgpu_context();
