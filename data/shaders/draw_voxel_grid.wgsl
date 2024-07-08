@@ -1,3 +1,7 @@
+struct ColorBuffer {
+  values: array<atomic<u32>>,
+};
+
 struct VertexInput {
     @location(0) position: vec3f,
     @location(1) uv: vec2f,
@@ -22,20 +26,29 @@ fn vs_main(in: VertexInput) -> VertexOutput {
 }
 
 // actualizar bind groups 
-@group(0) @binding(0) var left_eye_texture: texture_2d<f32>;
-@group(0) @binding(1) var texture_sampler : sampler;
+// @group(0) @binding(0) var left_eye_texture: texture_2d<f32>;
+// @group(0) @binding(1) var texture_sampler : sampler;
+@group(1) @binding(0) var<storage, read_write> outputColorBuffer : ColorBuffer;
 
 struct FragmentOutput {
     @location(0) color: vec4f
 }
 
 @fragment
-fn fs_main(in: VertexOutput) -> FragmentOutput {
-    // CAMBIAR TEXTURA POR 
-    let xr_image = textureSample(left_eye_texture, texture_sampler, in.uv);
+fn fs_main(@builtin(position) coord: vec4<f32>) -> FragmentOutput {
+    
+    let X = floor(coord.x);
+    let Y = floor(coord.y);
+    let index = u32(X + Y * uniforms.screenWidth) * 3u;
+
+    let R = f32(outputColorBuffer.data[index + 0u]) / 255.0;
+    let G = f32(outputColorBuffer.data[index + 1u]) / 255.0;
+    let B = f32(outputColorBuffer.data[index + 2u]) / 255.0;
+
+    let finalColor = vec3<f32>(R, G, B);
 
     var out: FragmentOutput;
-    out.color = vec4f(pow(xr_image.rgb, 1.0 / vec3f(2.2)), 1.0); // Color
+    out.color = vec4f(pow(finalColor.rgb, 1.0 / vec3f(2.2)), 1.0); // Color
 
     return out;
 }

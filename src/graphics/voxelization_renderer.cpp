@@ -25,7 +25,7 @@ int VoxelizationRenderer::initialize(std::vector<MeshInstance3D*> nodes, Camera*
 	init_compute_voxelization(nodes, camera);
 	on_compute();
 
-	init_render_voxelization_pipeline();
+	render_voxelization();
 
 	return 0;
 }
@@ -192,12 +192,12 @@ void VoxelizationRenderer::init_bindings_rasterizer(std::vector<MeshInstance3D*>
 	std::vector<InterleavedData> vertices = surface->get_vertices();
 
 	// Positions of the vertices
-	voxel_vertexBuffer.binding = 1;
+	voxel_vertexBuffer.binding = 0;
 	voxel_vertexBuffer.buffer_size = sizeof(InterleavedData) * vertices.size();
 	voxel_vertexBuffer.data = webgpu_context->create_buffer(voxel_vertexBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Storage, vertices.data(), "vertex buffer");
 
-	int vertex_count = surface->get_vertex_count();
-	voxel_vertexCount.binding = 2;
+	int vertex_count = number_triangles = surface->get_vertex_count();
+	voxel_vertexCount.binding = 1;
 	voxel_vertexCount.buffer_size = sizeof(int);
 	voxel_vertexCount.data = webgpu_context->create_buffer(voxel_vertexCount.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Storage, &vertex_count, "vertex count");
 
@@ -215,12 +215,15 @@ void VoxelizationRenderer::init_bindings_rasterizer(std::vector<MeshInstance3D*>
 	voxelizer_uniforms.height = webgpu_context->screen_height;
 	voxelizer_uniforms.modelViewProjectionMatrix = camera->get_view_projection() * nodes[0]->get_global_model();
 
-	uniformsBuffer.binding = 3;
+	uniformsBuffer.binding = 2;
 	uniformsBuffer.buffer_size = sizeof(UBO) + 8;
 	uniformsBuffer.data = webgpu_context->create_buffer(uniformsBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Uniform, &voxelizer_uniforms, "uniforms");
 
-	std::vector<Uniform*> uniforms = { &colorBuffer, &voxel_vertexBuffer, &voxel_vertexCount, &uniformsBuffer };
+	std::vector<Uniform*> uniforms = { &voxel_vertexBuffer, &voxel_vertexCount, &uniformsBuffer };
 	voxelization_bindgroup = webgpu_context->create_bind_group(uniforms, voxelization_shader, 0);
+
+	uniforms = { &colorBuffer };
+	color_buffer_bindgroup = webgpu_context->create_bind_group(uniforms, voxelization_shader, 1);
 }
 
 void VoxelizationRenderer::on_compute()
@@ -239,6 +242,7 @@ void VoxelizationRenderer::on_compute()
 	// Use compute pass
 	voxelization_pipeline.set(computePass);
 	wgpuComputePassEncoderSetBindGroup(computePass, 0, voxelization_bindgroup, 0, nullptr);
+	wgpuComputePassEncoderSetBindGroup(computePass, 1, color_buffer_bindgroup, 0, nullptr);
 
 	/*
 	Instead of providing a single number of concurrent calls, we express this number as a grid (sipatch) of x * y * z workgroups (groups of calls).
@@ -246,8 +250,8 @@ void VoxelizationRenderer::on_compute()
 	w * h * d should be multiple of 32 */
 
 	// Ceil invocationCount / workgroupSize
-	int workgroup_size = 256; // CAMBIAR AL DISPATCH DE UNA VEZ POR TRIANGULO
-	int workgroup_count = ceil(webgpu_context->screen_height * webgpu_context->screen_width / 256) ;
+	int workgroup_size = number_triangles; // CAMBIAR AL DISPATCH DE UNA VEZ POR TRIANGULO
+	int workgroup_count = ceil((number_triangles / 3) / 256);
 	wgpuComputePassEncoderDispatchWorkgroups(computePass, workgroup_count, 1, 1);
 
 	wgpuComputePassEncoderEnd(computePass);
@@ -263,46 +267,44 @@ void VoxelizationRenderer::on_compute()
 	RenderdocCapture::end_capture_frame();
 }
 
-void VoxelizationRenderer::init_render_voxelization_pipeline()
+void VoxelizationRenderer::render_voxelization()
 {
-	// SAME AS RENDER MIRROR IN VCT RENDERER!
+	WGPUTextureView swapchain_view = {};
 
-	sphere_mesh = parse_mesh("data/meshes/cube.obj");
+	// Create & fill the render pass (encoder)
+	
+	// Prepare the color attachment
+	WGPURenderPassColorAttachment render_pass_color_attachment = {};
+	render_pass_color_attachment.view = swapchain_view;
+	render_pass_color_attachment.loadOp = WGPULoadOp_Clear;
+	render_pass_color_attachment.storeOp = WGPUStoreOp_Store;
+	render_pass_color_attachment.clearValue = WGPUColor(0.0f, 0.0f, 0.0f, 1.0f);
+	render_pass_color_attachment.depthSlice = WGPU_DEPTH_SLICE_UNDEFINED;
 
-	WebGPUContext* webgpu_context = VCTRenderer::instance->get_webgpu_context();
+	WGPURenderPassDescriptor render_pass_descr = {};
+	render_pass_descr.colorAttachmentCount = 1;
+	render_pass_descr.colorAttachments = &render_pass_color_attachment;
 
-	WGPUTextureFormat swapchain_format = webgpu_context->swapchain_format;
+	{
+		WGPURenderPassEncoder render_pass = wgpuCommandEncoderBeginRenderPass(command_encoder, &render_pass_descr);
 
-	WGPUBlendState* blend_state = new WGPUBlendState();
-	blend_state->color = {
-			.operation = WGPUBlendOperation_Add,
-			.srcFactor = WGPUBlendFactor_SrcAlpha,
-			.dstFactor = WGPUBlendFactor_OneMinusSrcAlpha,
-	};
-	blend_state->alpha = {
-			.operation = WGPUBlendOperation_Add,
-			.srcFactor = WGPUBlendFactor_Zero,
-			.dstFactor = WGPUBlendFactor_One,
-	};
+		// Bind Pipeline
+		render_voxelization_pipeline.set(render_pass);
 
-	WGPUColorTargetState color_target = {};
-	color_target.format = swapchain_format;
-	color_target.blend = blend_state;
-	color_target.writeMask = WGPUColorWriteMask_All;
+		// Set binding group of the color buffer
+		wgpuRenderPassEncoderSetBindGroup(render_pass, 1, color_buffer_bindgroup, 0, nullptr);
 
-	sphere_mesh->get_surface(0)->set_material_cull_type(CULL_NONE);
-	sphere_mesh->get_surface(0)->set_material_transparency_type(ALPHA_BLEND);
+		// Set vertex buffer while encoding the render pass
+		wgpuRenderPassEncoderSetVertexBuffer(render_pass, 0, quad_surface.get_vertex_buffer(), 0, quad_surface.get_byte_size());
 
-	float cell_size = grid_data.cell_half_size * 2.0;
+		// Submit drawcall
+		wgpuRenderPassEncoderDraw(render_pass, 6, 1, 0, 0);
 
-	voxel_cell_size.binding = 2;
-	voxel_cell_size.buffer_size = sizeof(float);
-	voxel_cell_size.data = webgpu_context->create_buffer(voxel_cell_size.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Uniform, &cell_size, "cell size");
+		wgpuRenderPassEncoderEnd(render_pass);
 
-	std::vector<Uniform*> uniforms = { get_voxel_grid_points_buffer(), &voxel_cell_size, &voxel_voxelColorBuffer };
-	render_voxelization_bind_group = webgpu_context->create_bind_group(uniforms, RendererStorage::get_shader("data/shaders/draw_voxel_grid.wgsl"), 0);
-
-	render_voxelization_pipeline.create_render(RendererStorage::get_shader("data/shaders/draw_voxel_grid.wgsl"), color_target);
+		wgpuRenderPassEncoderRelease(render_pass);
+		}
+	
 }
 
 
@@ -355,6 +357,7 @@ void VoxelizationRenderer::render_grid(WGPURenderPassEncoder render_pass, WGPUBi
 	// Submit drawcalls
 	wgpuRenderPassEncoderDraw(render_pass, surface->get_vertex_count(), grid_data.grid_width * grid_data.grid_height * grid_data.grid_depth, 0, 0);
 
+	wgpuCommandEncoderRelease(command_encoder);
 }
 
 void VoxelizationRenderer::resize_window(int width, int height)

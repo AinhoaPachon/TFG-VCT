@@ -16,6 +16,8 @@ class VoxelizationRenderer {
 
     MeshInstance3D* floor_grid_mesh = nullptr;
     MeshInstance3D* sphere_mesh = nullptr;
+    Surface         quad_surface;
+    int             number_triangles;
 
     struct gridData {
         glm::vec4 bounds_min;
@@ -37,6 +39,7 @@ class VoxelizationRenderer {
     Pipeline		voxelization_pipeline;
     Shader* voxelization_shader = nullptr;
     WGPUBindGroup   voxelization_bindgroup = nullptr;
+    WGPUBindGroup   color_buffer_bindgroup = nullptr;
 
     Shader* render_voxelization_shader = nullptr;
 
@@ -58,12 +61,14 @@ class VoxelizationRenderer {
     WGPUBindGroup   render_voxelization_bind_group = nullptr;
     WGPUBindGroup   voxelization_rasterizer_bind_group = nullptr;
 
+    WGPUCommandEncoder command_encoder;
+
     void init_compute_voxelization(std::vector<MeshInstance3D*> nodes, Camera* camera);
     void init_bindings_voxelization_pipeline(std::vector<MeshInstance3D*> nodes, Camera* camera);
     void init_bindings_rasterizer(std::vector<MeshInstance3D*> nodes, Camera* camera);
     void on_compute();
 
-    void init_render_voxelization_pipeline();
+    void render_voxelization();
 
 public:
     VoxelizationRenderer();
