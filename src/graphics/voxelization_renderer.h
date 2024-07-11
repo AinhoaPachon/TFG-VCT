@@ -37,11 +37,12 @@ class VoxelizationRenderer {
     bool vertex_color = true;
 
     Pipeline		voxelization_pipeline;
-    Shader* voxelization_shader = nullptr;
+    Shader*         voxelization_shader = nullptr;
     WGPUBindGroup   voxelization_bindgroup = nullptr;
     WGPUBindGroup   color_buffer_bindgroup = nullptr;
+    WGPUBindGroup   render_color_buffer_bindgroup = nullptr;
 
-    Shader* render_voxelization_shader = nullptr;
+    Shader*         render_voxelization_shader = nullptr;
 
     Uniform			voxel_gridDataBuffer;
     Uniform			voxel_voxelGridPointsBuffer;
@@ -68,6 +69,7 @@ class VoxelizationRenderer {
     void init_bindings_rasterizer(std::vector<MeshInstance3D*> nodes, Camera* camera);
     void on_compute();
 
+    void init_render_pipeline();
     void render_voxelization();
 
 public:

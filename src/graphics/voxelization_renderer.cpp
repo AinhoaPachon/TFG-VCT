@@ -23,6 +23,7 @@ VoxelizationRenderer::VoxelizationRenderer()
 int VoxelizationRenderer::initialize(std::vector<MeshInstance3D*> nodes, Camera* camera)
 {
 	init_compute_voxelization(nodes, camera);
+	init_render_pipeline();
 	on_compute();
 
 	render_voxelization();
@@ -224,6 +225,7 @@ void VoxelizationRenderer::init_bindings_rasterizer(std::vector<MeshInstance3D*>
 
 	uniforms = { &colorBuffer };
 	color_buffer_bindgroup = webgpu_context->create_bind_group(uniforms, voxelization_shader, 1);
+	render_color_buffer_bindgroup = webgpu_context->create_bind_group(uniforms, render_voxelization_shader, 1);
 }
 
 void VoxelizationRenderer::on_compute()
@@ -267,9 +269,63 @@ void VoxelizationRenderer::on_compute()
 	RenderdocCapture::end_capture_frame();
 }
 
+void VoxelizationRenderer::init_render_pipeline()
+{
+	WebGPUContext* webgpu_context = VCTRenderer::instance->get_webgpu_context();
+
+	render_voxelization_shader = RendererStorage::get_shader("data/shaders/quad_mirror.wgsl");
+
+	WGPUTextureFormat swapchain_format = webgpu_context->swapchain_format;
+
+	WGPUBlendState blend_state;
+	blend_state.color = {
+			.operation = WGPUBlendOperation_Add,
+			.srcFactor = WGPUBlendFactor_SrcAlpha,
+			.dstFactor = WGPUBlendFactor_OneMinusSrcAlpha,
+	};
+	blend_state.alpha = {
+			.operation = WGPUBlendOperation_Add,
+			.srcFactor = WGPUBlendFactor_Zero,
+			.dstFactor = WGPUBlendFactor_One,
+	};
+
+	WGPUColorTargetState color_target = {};
+	color_target.format = swapchain_format;
+	color_target.blend = &blend_state;
+	color_target.writeMask = WGPUColorWriteMask_All;
+
+	//// Generate uniforms from the swapchain
+	//for (uint8_t i = 0; i < xr_context->swapchains[0].images.size(); i++) {
+	//	Uniform swapchain_uni;
+
+	//	swapchain_uni.data = xr_context->swapchains[0].images[i].textureView;
+	//	swapchain_uni.binding = 0;
+	//	swapchain_uniforms.push_back(swapchain_uni);
+	//}
+
+	//std::vector<Uniform*> uniforms = { &swapchain_uniforms[0] };
+
+	//// Generate bindgroups from the swapchain
+	//for (uint8_t i = 0; i < swapchain_uniforms.size(); i++) {
+	//	Uniform swapchain_uni;
+
+	//	std::vector<Uniform*> uniforms = { &swapchain_uniforms[i] };
+
+	//	swapchain_bind_groups.push_back(webgpu_context->create_bind_group(uniforms, render_voxelization_shader, 0));
+	//}
+
+	render_voxelization_pipeline.create_render(RendererStorage::get_shader("data/shaders/draw_voxel_grid.wgsl"), color_target);
+}
+
 void VoxelizationRenderer::render_voxelization()
 {
+	WebGPUContext* webgpu_context = VCTRenderer::instance->get_webgpu_context();
+
 	WGPUTextureView swapchain_view = {};
+	
+	// CREATE ENCODER
+	WGPUCommandEncoderDescriptor encoder_desc = {};
+	command_encoder = wgpuDeviceCreateCommandEncoder(webgpu_context->device, &encoder_desc);
 
 	// Create & fill the render pass (encoder)
 	
@@ -303,8 +359,18 @@ void VoxelizationRenderer::render_voxelization()
 		wgpuRenderPassEncoderEnd(render_pass);
 
 		wgpuRenderPassEncoderRelease(render_pass);
-		}
-	
+	}
+
+	WGPUCommandBufferDescriptor cmd_buff_descriptor = {};
+	cmd_buff_descriptor.nextInChain = NULL;
+	cmd_buff_descriptor.label = "Command buffer";
+
+	WGPUCommandBuffer commands = wgpuCommandEncoderFinish(command_encoder, &cmd_buff_descriptor);
+
+	wgpuQueueSubmit(webgpu_context->device_queue, 1, &commands);
+
+	wgpuCommandBufferRelease(commands);
+
 }
 
 
@@ -338,6 +404,7 @@ void VoxelizationRenderer::render()
 
 void VoxelizationRenderer::render_grid(WGPURenderPassEncoder render_pass, WGPUBindGroup render_camera_bind_group, uint32_t camera_buffer_stride)
 {
+
 	WebGPUContext* webgpu_context = VCTRenderer::instance->get_webgpu_context();
 
 	render_voxelization_pipeline.set(render_pass);
@@ -355,7 +422,7 @@ void VoxelizationRenderer::render_grid(WGPURenderPassEncoder render_pass, WGPUBi
 	wgpuRenderPassEncoderSetVertexBuffer(render_pass, 0, surface->get_vertex_buffer(), 0, surface->get_byte_size());
 
 	// Submit drawcalls
-	wgpuRenderPassEncoderDraw(render_pass, surface->get_vertex_count(), grid_data.grid_width * grid_data.grid_height * grid_data.grid_depth, 0, 0);
+	wgpuRenderPassEncoderDraw(render_pass, surface->get_vertex_count(), number_triangles, 0, 0);
 
 	wgpuCommandEncoderRelease(command_encoder);
 }
