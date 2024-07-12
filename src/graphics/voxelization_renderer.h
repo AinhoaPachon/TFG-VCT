@@ -33,6 +33,11 @@ class VoxelizationRenderer {
         glm::mat4x4 modelViewProjectionMatrix;
     } voxelizer_uniforms;
 
+    struct Uniforms {
+        int width;
+        int height;
+    } render_uniforms; // ideal sería quitarlo but now I can't be bothered with that tbh
+
     bool material_override_color = false;
     bool vertex_color = true;
 
@@ -55,6 +60,7 @@ class VoxelizationRenderer {
 
     Uniform         colorBuffer;
     Uniform         uniformsBuffer;
+    Uniform         renderUniformsBuffer;
 
     Uniform         voxel_cell_size;
 

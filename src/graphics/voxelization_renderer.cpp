@@ -225,7 +225,7 @@ void VoxelizationRenderer::init_bindings_rasterizer(std::vector<MeshInstance3D*>
 
 	uniforms = { &colorBuffer };
 	color_buffer_bindgroup = webgpu_context->create_bind_group(uniforms, voxelization_shader, 1);
-	render_color_buffer_bindgroup = webgpu_context->create_bind_group(uniforms, render_voxelization_shader, 1);
+	//render_color_buffer_bindgroup = webgpu_context->create_bind_group(uniforms, render_voxelization_shader, 1);
 }
 
 void VoxelizationRenderer::on_compute()
@@ -273,7 +273,7 @@ void VoxelizationRenderer::init_render_pipeline()
 {
 	WebGPUContext* webgpu_context = VCTRenderer::instance->get_webgpu_context();
 
-	render_voxelization_shader = RendererStorage::get_shader("data/shaders/quad_mirror.wgsl");
+	render_voxelization_shader = RendererStorage::get_shader("data/shaders/draw_voxel_grid.wgsl");
 
 	WGPUTextureFormat swapchain_format = webgpu_context->swapchain_format;
 
@@ -313,6 +313,19 @@ void VoxelizationRenderer::init_render_pipeline()
 
 	//	swapchain_bind_groups.push_back(webgpu_context->create_bind_group(uniforms, render_voxelization_shader, 0));
 	//}
+	render_uniforms.width = webgpu_context->screen_width;
+	render_uniforms.height = webgpu_context->screen_height;
+
+	renderUniformsBuffer.binding = 0;
+	renderUniformsBuffer.buffer_size = sizeof(Uniforms);
+	renderUniformsBuffer.data = webgpu_context->create_buffer(renderUniformsBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Uniform, &render_uniforms, "uniforms");
+
+	std::vector<Uniform*> uniforms = { &renderUniformsBuffer };
+	render_color_buffer_bindgroup = webgpu_context->create_bind_group(uniforms, render_voxelization_shader, 0);
+
+	uniforms = { &colorBuffer };
+	render_color_buffer_bindgroup = webgpu_context->create_bind_group(uniforms, render_voxelization_shader, 1);
+
 
 	render_voxelization_pipeline.create_render(RendererStorage::get_shader("data/shaders/draw_voxel_grid.wgsl"), color_target);
 }
