@@ -106,6 +106,8 @@ void VCTRenderer::render()
         swapchain_view = wgpuSwapChainGetCurrentTextureView(webgpu_context->screen_swapchain);
     }
 
+    //voxelization_renderer.render_grid();
+
     if (!is_openxr_available) {
         render_screen(swapchain_view);
     }
@@ -212,9 +214,9 @@ void VCTRenderer::render_screen(WGPUTextureView swapchain_view)
 
         render_transparent(render_pass, render_bind_group_camera);
 
-        voxelization_renderer.render_grid(render_pass, render_bind_group_camera);
-
         render_2D(render_pass, render_bind_group_camera_2d);
+
+        voxelization_renderer.render_grid(render_pass, render_bind_group_camera);
 
         wgpuRenderPassEncoderEnd(render_pass);
 
@@ -404,7 +406,9 @@ void VCTRenderer::init_camera_bind_group()
 void VCTRenderer::init_mirror_pipeline()
 {
     mirror_shader = RendererStorage::get_shader("data/shaders/quad_mirror.wgsl");
-
+    
+    quad_surface.create_quad(2.0f, 2.0f);
+    
     WGPUTextureFormat swapchain_format = webgpu_context->swapchain_format;
 
     WGPUBlendState blend_state;
