@@ -31,17 +31,11 @@ struct Vertex {
 struct VertexBuffer {
     values: array<Vertex>,
 };
-                                 
 
 @group(0) @binding(0) var<storage, read_write> vertexBuffer : VertexBuffer;
 @group(0) @binding(1) var<storage, read_write> vertexCount: u32;
 @group(0) @binding(2) var<uniform> uniforms : UBO;
 @group(1) @binding(0) var<storage, read_write> outputColorBuffer : ColorBuffer;
-
-// @group(0) @binding(0) var<uniform> grid_data: GridData;
-// @group(0) @binding(1) var<storage, read_write> _VoxelGridPoints: array<vec4f>;
-// @group(0) @binding(4) var<uniform> _MeshCount: u32;
-// @group(0) @binding(5) var<storage, read_write> _VoxelColor: array<vec4f>;
 
 // From: https://github.com/ssloy/tinyrenderer/wiki/Lesson-2:-Triangle-rasterization-and-back-face-culling
 fn barycentric(v1: vec3<f32>, v2: vec3<f32>, v3: vec3<f32>, p: vec2<f32>) -> vec3<f32> {
