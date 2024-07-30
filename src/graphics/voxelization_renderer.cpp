@@ -211,13 +211,14 @@ void VoxelizationRenderer::init_bindings_rasterizer(std::vector<MeshInstance3D*>
 	glm::vec3 cam_pos = camera->get_eye();
 	////cam_pos -= glm::mod(cam_pos, grid_data.cell_half_size * 2.0f);
 
-	camera->set_orthographic(cam_pos.x - off.x, cam_pos.x + off.x,
-		cam_pos.y - off.y, cam_pos.y + off.y,
-		cam_pos.z - off.z, cam_pos.z + off.z);
+	//camera->set_orthographic(cam_pos.x - off.x, cam_pos.x + off.x,
+	//	cam_pos.y - off.y, cam_pos.y + off.y,
+	//	cam_pos.z - off.z, cam_pos.z + off.z);
 
 	voxelizer_uniforms.width = webgpu_context->screen_width;
 	voxelizer_uniforms.height = webgpu_context->screen_height;
-	voxelizer_uniforms.modelViewProjectionMatrix = camera->get_view_projection() * nodes[0]->get_global_model();
+	//voxelizer_uniforms.modelViewProjectionMatrix = camera->get_view_projection() * nodes[0]->get_global_model();
+	voxelizer_uniforms.modelViewProjectionMatrix = nodes[0]->get_global_model() * camera->get_view_projection();// *nodes[0]->get_global_model();
 
 	uniformsBuffer.binding = 2;
 	uniformsBuffer.buffer_size = sizeof(UBO) + 8;
@@ -233,6 +234,7 @@ void VoxelizationRenderer::init_bindings_rasterizer(std::vector<MeshInstance3D*>
 
 void VoxelizationRenderer::on_compute()
 {
+	RenderdocCapture::start_capture_frame();
 	WebGPUContext* webgpu_context = VCTRenderer::instance->get_webgpu_context();
 	WGPUQueue queue = webgpu_context->device_queue;
 
@@ -256,7 +258,7 @@ void VoxelizationRenderer::on_compute()
 
 	// Ceil invocationCount / workgroupSize
 	int workgroup_size = number_triangles; // CAMBIAR AL DISPATCH DE UNA VEZ POR TRIANGULO
-	int workgroup_count = ceil((number_triangles / 3) / 256);
+	int workgroup_count = ceil((number_triangles / 3));
 	wgpuComputePassEncoderDispatchWorkgroups(computePass, workgroup_count, 1, 1);
 
 	wgpuComputePassEncoderEnd(computePass);
@@ -269,6 +271,7 @@ void VoxelizationRenderer::on_compute()
 	wgpuCommandBufferRelease(commands);
 	wgpuComputePassEncoderRelease(computePass);
 	wgpuCommandEncoderRelease(encod);
+	
 	RenderdocCapture::end_capture_frame();
 }
 
@@ -390,6 +393,7 @@ void VoxelizationRenderer::render_voxelization()
 
 	wgpuCommandBufferRelease(commands);
 
+	RenderdocCapture::end_capture_frame();
 }
 
 
