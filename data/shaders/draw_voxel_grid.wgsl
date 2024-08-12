@@ -65,8 +65,8 @@ fn fs_main(@builtin(position) coord: vec4<f32>) -> FragmentOutput {
     let G = f32(outputColorBuffer.values[index + 1u]) / 255.0;
     let B = f32(outputColorBuffer.values[index + 2u]) / 255.0;
 
-    //let finalColor = vec3<f32>(R, G, B);
-    let finalColor = vec3f(1.0, 0.0, 0.0);
+    let finalColor = vec3<f32>(R, G, B);
+    //let finalColor = vec3f(1.0, 0.0, 0.0);
     var out: FragmentOutput;
     out.color = vec4f(pow(finalColor.rgb, 1.0 / vec3f(2.2)), 1.0); // Color
 

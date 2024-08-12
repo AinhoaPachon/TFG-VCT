@@ -108,8 +108,14 @@ fn draw_line(v1: vec3<f32>, v2: vec3<f32>) {
 fn project(v: Vertex) -> vec3<f32> {
     var position : vec3f = v.position;
     var screenPos = uniforms.modelViewProjectionMatrix * vec4<f32>(position, 1.0);
-    screenPos.x = (screenPos.x / screenPos.w) * f32(uniforms.screenWidth);
-    screenPos.y = (screenPos.y / screenPos.w) * f32(uniforms.screenHeight);
+    screenPos.x = (screenPos.x / screenPos.w); // * f32(uniforms.screenWidth);
+    screenPos.y = (screenPos.y / screenPos.w); // * f32(uniforms.screenHeight);
+
+    screenPos.x = screenPos.y * 0.5 + 0.5;
+    screenPos.y = screenPos.y * 0.5 + 0.5;
+
+    screenPos.x = screenPos.x * f32(uniforms.screenWidth);
+    screenPos.y = screenPos.y * f32(uniforms.screenHeight);
 
     return vec3<f32>(screenPos.x, screenPos.y, screenPos.w);
 }
@@ -122,7 +128,7 @@ fn is_off_screen(v: vec3<f32>) -> bool {
     return false;
 }
 
-@compute @workgroup_size(256, 1)
+@compute @workgroup_size(1, 1)
 fn compute(@builtin(global_invocation_id) global_id : vec3<u32>) {
     let index = global_id.x * 3u;
 

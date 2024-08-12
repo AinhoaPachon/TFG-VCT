@@ -211,13 +211,16 @@ void VoxelizationRenderer::init_bindings_rasterizer(std::vector<MeshInstance3D*>
 	glm::vec3 cam_pos = camera->get_eye();
 	////cam_pos -= glm::mod(cam_pos, grid_data.cell_half_size * 2.0f);
 
-	camera->set_orthographic(cam_pos.x - off.x, cam_pos.x + off.x,
-		cam_pos.y - off.y, cam_pos.y + off.y,
-		cam_pos.z - off.z, cam_pos.z + off.z);
+	//camera->set_orthographic(cam_pos.x - off.x, cam_pos.x + off.x,
+	//	cam_pos.y - off.y, cam_pos.y + off.y,
+	//	cam_pos.z - off.z, cam_pos.z + off.z);
+
+	Camera orth_cam;
+	orth_cam.set_orthographic(-grid_data.grid_width, grid_data.grid_width, -grid_data.grid_height, grid_data.grid_height, -grid_data.grid_depth, grid_data.grid_depth);
 
 	voxelizer_uniforms.width = webgpu_context->screen_width;
 	voxelizer_uniforms.height = webgpu_context->screen_height;
-	voxelizer_uniforms.modelViewProjectionMatrix = camera->get_view_projection() * nodes[0]->get_global_model();
+	voxelizer_uniforms.modelViewProjectionMatrix = orth_cam.get_projection();// *nodes[0]->get_global_model();
 
 	uniformsBuffer.binding = 2;
 	uniformsBuffer.buffer_size = sizeof(UBO) + 8;
@@ -256,7 +259,7 @@ void VoxelizationRenderer::on_compute()
 
 	// Ceil invocationCount / workgroupSize
 	int workgroup_size = number_triangles; // CAMBIAR AL DISPATCH DE UNA VEZ POR TRIANGULO
-	int workgroup_count = ceil((number_triangles / 3) / 256);
+	int workgroup_count = ceil(number_triangles / 3);
 	wgpuComputePassEncoderDispatchWorkgroups(computePass, workgroup_count, 1, 1);
 
 	wgpuComputePassEncoderEnd(computePass);
