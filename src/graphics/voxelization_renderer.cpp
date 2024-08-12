@@ -28,7 +28,7 @@ int VoxelizationRenderer::initialize(std::vector<MeshInstance3D*> nodes, Camera*
 
 	quad_surface.create_quad(2.0f, 2.0f);
 
-	// El problema está en que esto no debería llamarse aquí!!
+	// El problema estï¿½ en que esto no deberï¿½a llamarse aquï¿½!!
 	//render_voxelization();
 
 	return 0;
@@ -236,6 +236,7 @@ void VoxelizationRenderer::init_bindings_rasterizer(std::vector<MeshInstance3D*>
 
 void VoxelizationRenderer::on_compute()
 {
+	RenderdocCapture::start_capture_frame();
 	WebGPUContext* webgpu_context = VCTRenderer::instance->get_webgpu_context();
 	WGPUQueue queue = webgpu_context->device_queue;
 
@@ -272,6 +273,7 @@ void VoxelizationRenderer::on_compute()
 	wgpuCommandBufferRelease(commands);
 	wgpuComputePassEncoderRelease(computePass);
 	wgpuCommandEncoderRelease(encod);
+	
 	RenderdocCapture::end_capture_frame();
 }
 
@@ -393,6 +395,7 @@ void VoxelizationRenderer::render_voxelization()
 
 	wgpuCommandBufferRelease(commands);
 
+	RenderdocCapture::end_capture_frame();
 }
 
 

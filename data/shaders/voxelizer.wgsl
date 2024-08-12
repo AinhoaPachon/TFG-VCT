@@ -131,7 +131,7 @@ fn is_off_screen(v: vec3<f32>) -> bool {
 @compute @workgroup_size(1, 1)
 fn compute(@builtin(global_invocation_id) global_id : vec3<u32>) {
     let index = global_id.x * 3u;
-
+    
     let v1 = project(vertexBuffer.values[index + 0u]);
     let v2 = project(vertexBuffer.values[index + 1u]);
     let v3 = project(vertexBuffer.values[index + 2u]);
