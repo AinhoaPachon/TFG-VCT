@@ -53,9 +53,9 @@ int VCTEngine::initialize(Renderer* renderer, GLFWwindow* window, bool use_glfw,
 	material.shader = RendererStorage::get_shader("data/shaders/mesh_pbr.wgsl", material);
 	material.flags = 1;
 	//material.emissive = glm::vec3(0.6f, 0.2f, 0.45f);
-	monkey2->set_surface_material_override(monkey->get_surface(0), material);
+	monkey2->set_surface_material_override(monkey2->get_surface(0), material);
 
-	voxelized_nodes.push_back(monkey);
+	voxelized_nodes.push_back(monkey2);
 	//voxelized_nodes.push_back(monkey2);
 
 	Light3D* light = new OmniLight3D();

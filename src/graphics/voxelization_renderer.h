@@ -30,6 +30,8 @@ class VoxelizationRenderer {
     struct UBO {
         int width;
         int height;
+        int padding0;
+        int padding1;
         glm::mat4x4 modelViewProjectionMatrix;
     } voxelizer_uniforms;
 

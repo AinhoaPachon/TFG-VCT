@@ -57,9 +57,9 @@ struct FragmentOutput {
 @fragment
 fn fs_main(@builtin(position) coord: vec4<f32>) -> FragmentOutput {
     
-    let X = floor(coord.x);
-    let Y = floor(coord.y);
-    let index = u32(X + Y * f32(uniforms.screenWidth)) * 3u;
+    let X = u32(floor(coord.x));
+    let Y = u32(floor(coord.y));
+    let index = u32(X + Y * uniforms.screenWidth) * 4;
 
     let R = f32(outputColorBuffer.values[index + 0u]) / 255.0;
     let G = f32(outputColorBuffer.values[index + 1u]) / 255.0;

@@ -15,6 +15,8 @@ struct GridData {
 struct UBO {
     screenWidth: u32,
     screenHeight: u32,
+    padding0 : u32,
+    padding1 : u32,
     modelViewProjectionMatrix: mat4x4<f32>
 };
 
@@ -62,11 +64,11 @@ fn get_min_max(v1: vec3<f32>, v2: vec3<f32>, v3: vec3<f32>) -> vec4<f32> {
 }
 
 fn color_pixel(x: u32, y: u32, r: u32, g: u32, b: u32) {
-    let pixelID = u32(x + y * uniforms.screenWidth * 3u);
+    let pixelID = u32(x + y * uniforms.screenWidth) * 4u;
   
-    atomicMin(&outputColorBuffer.values[pixelID + 0u], r);
-    atomicMin(&outputColorBuffer.values[pixelID + 1u], g);
-    atomicMin(&outputColorBuffer.values[pixelID + 2u], b);
+    atomicMax(&outputColorBuffer.values[pixelID + 0u], 255);
+    atomicMax(&outputColorBuffer.values[pixelID + 1u], g);
+    atomicMax(&outputColorBuffer.values[pixelID + 2u], b);
 }
 
 fn draw_triangle(v1: vec3<f32>, v2: vec3<f32>, v3: vec3<f32>) {
@@ -79,7 +81,7 @@ fn draw_triangle(v1: vec3<f32>, v2: vec3<f32>, v3: vec3<f32>) {
     for (var x: u32 = startX; x <= endX; x = x + 1u) {
         for (var y: u32 = startY; y <= endY; y = y + 1u) {
             let bc = barycentric(v1, v2, v3, vec2<f32>(f32(x), f32(y))); 
-            let color = (bc.x * v1.z + bc.y * v2.z + bc.z * v3.z) * 50.0 - 400.0;
+            let color = (bc.x * v1.z + bc.y * v2.z + bc.z * v3.z);
 
             let R = color;
             let G = color;
@@ -108,8 +110,8 @@ fn draw_line(v1: vec3<f32>, v2: vec3<f32>) {
 fn project(v: Vertex) -> vec3<f32> {
     var position : vec3f = v.position;
     var screenPos = uniforms.modelViewProjectionMatrix * vec4<f32>(position, 1.0);
-    screenPos.x = (screenPos.x / screenPos.w); // * f32(uniforms.screenWidth);
-    screenPos.y = (screenPos.y / screenPos.w); // * f32(uniforms.screenHeight);
+    // screenPos.x = (screenPos.x / screenPos.w); // * f32(uniforms.screenWidth);
+    // screenPos.y = (screenPos.y / screenPos.w); // * f32(uniforms.screenHeight);
 
     screenPos.x = screenPos.y * 0.5 + 0.5;
     screenPos.y = screenPos.y * 0.5 + 0.5;

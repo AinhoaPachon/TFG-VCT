@@ -182,7 +182,7 @@ void VoxelizationRenderer::init_bindings_rasterizer(std::vector<MeshInstance3D*>
 	WebGPUContext* webgpu_context = VCTRenderer::instance->get_webgpu_context();
 
 	std::vector<glm::vec4> color_values;
-	for (int i = 0; i < webgpu_context->screen_width * webgpu_context->screen_height * 3; ++i) {
+	for (int i = 0; i < webgpu_context->screen_width * webgpu_context->screen_height * 4; ++i) {
 		color_values.push_back(glm::vec4(0.0, 0.0, 0.0, 0.0));
 	}
 
@@ -223,7 +223,7 @@ void VoxelizationRenderer::init_bindings_rasterizer(std::vector<MeshInstance3D*>
 	voxelizer_uniforms.modelViewProjectionMatrix = orth_cam.get_projection();// *nodes[0]->get_global_model();
 
 	uniformsBuffer.binding = 2;
-	uniformsBuffer.buffer_size = sizeof(UBO) + 8;
+	uniformsBuffer.buffer_size = sizeof(UBO);
 	uniformsBuffer.data = webgpu_context->create_buffer(uniformsBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Uniform, &voxelizer_uniforms, "uniforms");
 
 	std::vector<Uniform*> uniforms = { &voxel_vertexBuffer, &voxel_vertexCount, &uniformsBuffer };
