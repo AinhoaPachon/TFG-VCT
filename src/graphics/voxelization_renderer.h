@@ -76,7 +76,6 @@ class VoxelizationRenderer {
     void on_compute();
 
     void init_render_pipeline();
-    void render_voxelization();
 
 public:
     VoxelizationRenderer();
@@ -85,7 +84,6 @@ public:
     void clean();
 
     void update(float delta_time);
-    void render();
     void render_grid(WGPURenderPassEncoder render_pass, WGPUBindGroup render_camera_bind_group, uint32_t camera_buffer_stride = 0);
 
     void resize_window(int width, int height);

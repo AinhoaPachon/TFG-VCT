@@ -341,64 +341,6 @@ void VoxelizationRenderer::init_render_pipeline()
 	render_voxelization_pipeline.create_render(RendererStorage::get_shader("data/shaders/draw_voxel_grid.wgsl"), color_target, desc);
 }
 
-void VoxelizationRenderer::render_voxelization()
-{
-	WebGPUContext* webgpu_context = VCTRenderer::instance->get_webgpu_context();
-
-	WGPUTextureView swapchain_view = {};
-	
-	// CREATE ENCODER
-	WGPUCommandEncoderDescriptor encoder_desc = {};
-	command_encoder = wgpuDeviceCreateCommandEncoder(webgpu_context->device, &encoder_desc);
-
-	// Create & fill the render pass (encoder)
-	
-	// Prepare the color attachment
-	WGPURenderPassColorAttachment render_pass_color_attachment = {};
-	render_pass_color_attachment.view = swapchain_view;
-	render_pass_color_attachment.loadOp = WGPULoadOp_Clear;
-	render_pass_color_attachment.storeOp = WGPUStoreOp_Store;
-	render_pass_color_attachment.clearValue = WGPUColor(0.0f, 0.0f, 0.0f, 1.0f);
-	render_pass_color_attachment.depthSlice = WGPU_DEPTH_SLICE_UNDEFINED;
-
-	WGPURenderPassDescriptor render_pass_descr = {};
-	render_pass_descr.colorAttachmentCount = 1;
-	render_pass_descr.colorAttachments = &render_pass_color_attachment;
-
-	{
-		WGPURenderPassEncoder render_pass = wgpuCommandEncoderBeginRenderPass(command_encoder, &render_pass_descr);
-
-		// Bind Pipeline
-		render_voxelization_pipeline.set(render_pass);
-
-		// Set binding group of the color buffer
-		wgpuRenderPassEncoderSetBindGroup(render_pass, 1, color_buffer_bindgroup, 0, nullptr);
-
-		// Set vertex buffer while encoding the render pass
-		wgpuRenderPassEncoderSetVertexBuffer(render_pass, 0, quad_surface.get_vertex_buffer(), 0, quad_surface.get_byte_size());
-
-		// Submit drawcall
-		wgpuRenderPassEncoderDraw(render_pass, 6, 1, 0, 0);
-
-		wgpuRenderPassEncoderEnd(render_pass);
-
-		wgpuRenderPassEncoderRelease(render_pass);
-	}
-
-	WGPUCommandBufferDescriptor cmd_buff_descriptor = {};
-	cmd_buff_descriptor.nextInChain = NULL;
-	cmd_buff_descriptor.label = "Command buffer";
-
-	WGPUCommandBuffer commands = wgpuCommandEncoderFinish(command_encoder, &cmd_buff_descriptor);
-
-	wgpuQueueSubmit(webgpu_context->device_queue, 1, &commands);
-
-	wgpuCommandBufferRelease(commands);
-
-	RenderdocCapture::end_capture_frame();
-}
-
-
 void VoxelizationRenderer::clean()
 {
 	wgpuBindGroupRelease(render_voxelization_bind_group);
@@ -421,61 +363,6 @@ void VoxelizationRenderer::clean()
 
 void VoxelizationRenderer::update(float delta_time)
 {
-}
-
-void VoxelizationRenderer::render()
-{
-	WebGPUContext* webgpu_context = VCTRenderer::instance->get_webgpu_context();
-
-	WGPUTextureView swapchain_view = {};
-
-	// CREATE ENCODER
-	WGPUCommandEncoderDescriptor encoder_desc = {};
-	command_encoder = wgpuDeviceCreateCommandEncoder(webgpu_context->device, &encoder_desc);
-
-	// Create & fill the render pass (encoder)
-
-	// Prepare the color attachment
-	WGPURenderPassColorAttachment render_pass_color_attachment = {};
-	render_pass_color_attachment.view = swapchain_view;
-	render_pass_color_attachment.loadOp = WGPULoadOp_Clear;
-	render_pass_color_attachment.storeOp = WGPUStoreOp_Store;
-	render_pass_color_attachment.clearValue = WGPUColor(0.0f, 0.0f, 0.0f, 1.0f);
-	render_pass_color_attachment.depthSlice = WGPU_DEPTH_SLICE_UNDEFINED;
-
-	WGPURenderPassDescriptor render_pass_descr = {};
-	render_pass_descr.colorAttachmentCount = 1;
-	render_pass_descr.colorAttachments = &render_pass_color_attachment;
-
-	{
-		WGPURenderPassEncoder render_pass = wgpuCommandEncoderBeginRenderPass(command_encoder, &render_pass_descr);
-
-		// Bind Pipeline
-		render_voxelization_pipeline.set(render_pass);
-
-		// Set binding group of the color buffer
-		wgpuRenderPassEncoderSetBindGroup(render_pass, 1, color_buffer_bindgroup, 0, nullptr);
-
-		// Set vertex buffer while encoding the render pass
-		wgpuRenderPassEncoderSetVertexBuffer(render_pass, 0, quad_surface.get_vertex_buffer(), 0, quad_surface.get_byte_size());
-
-		// Submit drawcall
-		wgpuRenderPassEncoderDraw(render_pass, 6, 1, 0, 0);
-
-		wgpuRenderPassEncoderEnd(render_pass);
-
-		wgpuRenderPassEncoderRelease(render_pass);
-	}
-
-	WGPUCommandBufferDescriptor cmd_buff_descriptor = {};
-	cmd_buff_descriptor.nextInChain = NULL;
-	cmd_buff_descriptor.label = "Command buffer";
-
-	WGPUCommandBuffer commands = wgpuCommandEncoderFinish(command_encoder, &cmd_buff_descriptor);
-
-	wgpuQueueSubmit(webgpu_context->device_queue, 1, &commands);
-
-	wgpuCommandBufferRelease(commands);
 }
 
 void VoxelizationRenderer::render_grid(WGPURenderPassEncoder render_pass, WGPUBindGroup render_camera_bind_group, uint32_t camera_buffer_stride)
