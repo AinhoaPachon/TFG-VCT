@@ -205,15 +205,8 @@ void VoxelizationRenderer::init_bindings_rasterizer(std::vector<MeshInstance3D*>
 	voxel_vertexCount.buffer_size = sizeof(int);
 	voxel_vertexCount.data = webgpu_context->create_buffer(voxel_vertexCount.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Storage, &vertex_count, "vertex count");
 
-	//// MIRAR LOS VALORES INICIALIZADOS DE CAM POS
-	glm::vec3 off = glm::vec3(grid_data.grid_width, grid_data.grid_height, grid_data.grid_depth) / 2.0f;
-
 	glm::vec3 cam_pos = camera->get_eye();
 	////cam_pos -= glm::mod(cam_pos, grid_data.cell_half_size * 2.0f);
-
-	//camera->set_orthographic(cam_pos.x - off.x, cam_pos.x + off.x,
-	//	cam_pos.y - off.y, cam_pos.y + off.y,
-	//	cam_pos.z - off.z, cam_pos.z + off.z);
 
 	Camera orth_cam;
 	orth_cam.set_orthographic(-grid_data.grid_width, grid_data.grid_width, -grid_data.grid_height, grid_data.grid_height, -grid_data.grid_depth, grid_data.grid_depth);

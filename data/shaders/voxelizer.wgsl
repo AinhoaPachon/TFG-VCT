@@ -83,13 +83,17 @@ fn draw_triangle(v1: vec3<f32>, v2: vec3<f32>, v3: vec3<f32>) {
             let bc = barycentric(v1, v2, v3, vec2<f32>(f32(x), f32(y))); 
             let color = (bc.x * v1.z + bc.y * v2.z + bc.z * v3.z);
 
-            let R = color;
-            let G = color;
-            let B = color;
+            // let R = color;
+            // let G = color;
+            // let B = color;
 
-            if (bc.x < 0.0 || bc.y < 0.0 || bc.z < 0.0) {
-                continue;
-            }
+            let R = 255;
+            let G = 0;
+            let B = 0;
+
+            // if (bc.x < 0.0 || bc.y < 0.0 || bc.z < 0.0) {
+            //     continue;
+            // }
             color_pixel(x, y, u32(R), u32(G), u32(B));
         }
     }
@@ -118,6 +122,7 @@ fn project(v: Vertex) -> vec3<f32> {
 
     screenPos.x = screenPos.x * f32(uniforms.screenWidth);
     screenPos.y = screenPos.y * f32(uniforms.screenHeight);
+
 
     return vec3<f32>(screenPos.x, screenPos.y, screenPos.w);
 }
@@ -148,11 +153,11 @@ fn compute(@builtin(global_invocation_id) global_id : vec3<u32>) {
 }
 
 
-@compute @workgroup_size(256, 1)
-fn clear(@builtin(global_invocation_id) global_id : vec3<u32>) {
-    let index = global_id.x * 3u;
+// @compute @workgroup_size(256, 1)
+// fn clear(@builtin(global_invocation_id) global_id : vec3<u32>) {
+//     let index = global_id.x * 3u;
 
-    atomicStore(&outputColorBuffer.values[index + 0u], 255u);
-    atomicStore(&outputColorBuffer.values[index + 1u], 255u);
-    atomicStore(&outputColorBuffer.values[index + 2u], 255u);
-}
+//     atomicStore(&outputColorBuffer.values[index + 0u], 255u);
+//     atomicStore(&outputColorBuffer.values[index + 1u], 255u);
+//     atomicStore(&outputColorBuffer.values[index + 2u], 255u);
+// }
