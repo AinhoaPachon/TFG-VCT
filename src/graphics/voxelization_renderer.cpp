@@ -115,7 +115,7 @@ void VoxelizationRenderer::init_bindings_voxelization_pipeline(std::vector<MeshI
 		}
 
 		// Node color
-		Material* material = node->get_surface_material_override(surface);
+		Material* material = node->get_surface_material_override(surface) ? node->get_surface_material_override(surface) : &surface->get_material();
 		material_colors.push_back(material->color);
 	}
 	scene_aabb.half_size = glm::vec3((max_pos - min_pos).x * 0.5, (max_pos - min_pos).y * 0.5, (max_pos - min_pos).z * 0.5);
@@ -209,7 +209,7 @@ void VoxelizationRenderer::init_bindings_rasterizer(std::vector<MeshInstance3D*>
 	////cam_pos -= glm::mod(cam_pos, grid_data.cell_half_size * 2.0f);
 
 	Camera orth_cam;
-	orth_cam.set_orthographic(-grid_data.grid_width, grid_data.grid_width, -grid_data.grid_height, grid_data.grid_height, -grid_data.grid_depth, grid_data.grid_depth);
+	orth_cam.set_orthographic(-grid_data.grid_width * 0.25, grid_data.grid_width * 0.25, -grid_data.grid_height * 0.25, grid_data.grid_height * 0.25, -grid_data.grid_depth, grid_data.grid_depth);
 
 	voxelizer_uniforms.width = webgpu_context->screen_width;
 	voxelizer_uniforms.height = webgpu_context->screen_height;
@@ -378,7 +378,7 @@ void VoxelizationRenderer::render_grid(WGPURenderPassEncoder render_pass, WGPUBi
 	wgpuRenderPassEncoderSetVertexBuffer(render_pass, 0, surface->get_vertex_buffer(), 0, surface->get_byte_size());
 
 	// Submit drawcalls
-	wgpuRenderPassEncoderDraw(render_pass, surface->get_vertex_count(), number_triangles, 0, 0);
+	wgpuRenderPassEncoderDraw(render_pass, surface->get_vertex_count(), 1, 0, 0);
 }
 
 void VoxelizationRenderer::resize_window(int width, int height)

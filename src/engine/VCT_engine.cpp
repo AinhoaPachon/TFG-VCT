@@ -27,17 +27,22 @@ int VCTEngine::initialize(Renderer* renderer, GLFWwindow* window, bool use_glfw,
 
 	skybox = new Environment3D();
 
-	entities.push_back(skybox);
+	//entities.push_back(skybox);
 	
 	MeshInstance3D* monkey = parse_mesh("data/meshes/cube.obj");
 	monkey->scale(glm::vec3(1.0f));
 	monkey->translate(glm::vec3(0.0f, 0.0f, 0.0f));
-	entities.push_back(monkey);
+	//entities.push_back(monkey);
 
-	MeshInstance3D* monkey2 = parse_mesh("data/meshes/monkey.obj");
+	std::vector<Node3D*> loaded_entities;
+	parse_scene("data/meshes/triangle/Triangle.gltf", loaded_entities);
+
+	MeshInstance3D* triangle = static_cast<MeshInstance3D*>(loaded_entities[0]->get_children()[0]);
+
+	MeshInstance3D* monkey2 = parse_mesh("data/meshes/sphere.obj");
 	monkey2->scale(glm::vec3(1));
 	monkey2->translate(glm::vec3(0.0f, 0.0f, -1.5f));
-	entities.push_back(monkey2);
+	//entities.push_back(monkey2);
 
 	//Surface* surface = monkey->get_surface(0);
 	//surface->set_material_color(glm::vec4(0.5f, 0.4f, 0.0f, 1.0f));
@@ -55,7 +60,7 @@ int VCTEngine::initialize(Renderer* renderer, GLFWwindow* window, bool use_glfw,
 	//material.emissive = glm::vec3(0.6f, 0.2f, 0.45f);
 	monkey2->set_surface_material_override(monkey2->get_surface(0), material);
 
-	voxelized_nodes.push_back(monkey2);
+	voxelized_nodes.push_back(triangle);
 	//voxelized_nodes.push_back(monkey2);
 
 	Light3D* light = new OmniLight3D();

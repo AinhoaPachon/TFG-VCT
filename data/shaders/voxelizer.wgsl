@@ -22,10 +22,15 @@ struct UBO {
 
 struct Vertex { 
     position: vec3f,
+    padding: f32,
     uv: vec2f,
+    padding2: vec2f,
     normal: vec3f,
+    padding3: f32,
     tangent: vec3f,
+    padding4: f32,
     color: vec3f,
+    padding5: f32,
     weights: vec4f,
     joints: vec4f
 };
@@ -111,8 +116,7 @@ fn draw_line(v1: vec3<f32>, v2: vec3<f32>) {
     }
 }
 
-fn project(v: Vertex) -> vec3<f32> {
-    var position : vec3f = v.position;
+fn project(position: vec3f) -> vec3<f32> {
     var screenPos = uniforms.modelViewProjectionMatrix * vec4<f32>(position, 1.0);
     // screenPos.x = (screenPos.x / screenPos.w); // * f32(uniforms.screenWidth);
     // screenPos.y = (screenPos.y / screenPos.w); // * f32(uniforms.screenHeight);
@@ -122,7 +126,6 @@ fn project(v: Vertex) -> vec3<f32> {
 
     screenPos.x = screenPos.x * f32(uniforms.screenWidth);
     screenPos.y = screenPos.y * f32(uniforms.screenHeight);
-
 
     return vec3<f32>(screenPos.x, screenPos.y, screenPos.w);
 }
@@ -139,9 +142,11 @@ fn is_off_screen(v: vec3<f32>) -> bool {
 fn compute(@builtin(global_invocation_id) global_id : vec3<u32>) {
     let index = global_id.x * 3u;
     
-    let v1 = project(vertexBuffer.values[index + 0u]);
-    let v2 = project(vertexBuffer.values[index + 1u]);
-    let v3 = project(vertexBuffer.values[index + 2u]);
+    let v0 = project(vertexBuffer.values[index + 0u].position);
+
+    let v1 = project(vec3f(0.0, 0.0, 0.0));
+    let v2 = project(vec3f(1.0, 0.0, 0.0));
+    let v3 = project(vec3f(0.0, 1.0, 0.0));
 
     if (is_off_screen(v1) || is_off_screen(v2) || is_off_screen(v3)) {
         return;
