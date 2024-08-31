@@ -72,9 +72,9 @@ fn get_min_max(v1: vec3<f32>, v2: vec3<f32>, v3: vec3<f32>) -> vec4<f32> {
 fn color_pixel(x: u32, y: u32, r: u32, g: u32, b: u32) {
     let pixelID = u32(x + y * uniforms.screenWidth) * 4u;
   
-    atomicMax(&outputColorBuffer.values[pixelID + 0u], r);
-    atomicMax(&outputColorBuffer.values[pixelID + 1u], g);
-    atomicMax(&outputColorBuffer.values[pixelID + 2u], b);
+    atomicMin(&outputColorBuffer.values[pixelID + 0u], r);
+    atomicMin(&outputColorBuffer.values[pixelID + 1u], g);
+    atomicMin(&outputColorBuffer.values[pixelID + 2u], b);
 }
 
 fn draw_triangle(v1: vec3<f32>, v2: vec3<f32>, v3: vec3<f32>) {
@@ -100,6 +100,8 @@ fn draw_triangle(v1: vec3<f32>, v2: vec3<f32>, v3: vec3<f32>) {
             if (bc.x < 0.0 || bc.y < 0.0 || bc.z < 0.0) {
                 continue;
             }
+
+            // Remember to multiply by 255 when not storing depth
             color_pixel(x, y, u32(R), u32(G), u32(B));
         }
     }
@@ -118,15 +120,23 @@ fn draw_line(v1: vec3<f32>, v2: vec3<f32>) {
 }
 
 fn project(vertex: Vertex) -> vec3<f32> {
-    var screenPos = uniforms.modelMatrix * uniforms.viewProjectionMatrix * vec4<f32>(vertex.position, 1.0);
 
-    screenPos.x = screenPos.x * 0.5 + 0.5;
-    screenPos.y = screenPos.y * 0.5 + 0.5;
+    var worldPos = uniforms.modelMatrix * vec4<f32>(vertex.position, 1.0);
+    var projection = uniforms.viewProjectionMatrix * worldPos;
 
-    screenPos.x = screenPos.x * f32(uniforms.screenWidth);
-    screenPos.y = screenPos.y * f32(uniforms.screenHeight);
+    // For orthographic
+    // var clip_space = projection;
 
-    return vec3<f32>(screenPos.x, screenPos.y, screenPos.w);
+    // For perspective
+    var clip_space = vec4f(projection.xyz / projection.w, projection.w);
+
+    clip_space.x = clip_space.x * 0.5 + 0.5;
+    clip_space.y = clip_space.y * 0.5 + 0.5;
+
+    clip_space.x = clip_space.x * f32(uniforms.screenWidth);
+    clip_space.y = (1.0 - clip_space.y) * f32(uniforms.screenHeight);
+
+    return vec3<f32>(clip_space.x, clip_space.y, clip_space.w);
 }
 
 fn is_off_screen(v: vec3<f32>) -> bool {

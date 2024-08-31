@@ -187,7 +187,7 @@ void VoxelizationRenderer::init_bindings_rasterizer(std::vector<MeshInstance3D*>
 
 	std::vector<glm::vec4> color_values;
 	for (int i = 0; i < webgpu_context->screen_width * webgpu_context->screen_height * 4; ++i) {
-		color_values.push_back(glm::vec4(0.0, 0.0, 0.0, 0.0));
+		color_values.push_back(glm::uvec4(255, 255, 255, 255));
 	}
 
 	colorBuffer.binding = 0;
@@ -210,13 +210,12 @@ void VoxelizationRenderer::init_bindings_rasterizer(std::vector<MeshInstance3D*>
 	voxel_vertexCount.data = webgpu_context->create_buffer(voxel_vertexCount.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Storage, &vertex_count, "vertex count");
 
 	glm::vec3 cam_pos = camera->get_eye();
-	glm::mat4x4 projection = camera->get_projection();
+	glm::mat4x4 projection = camera->get_view_projection();
 	////cam_pos -= glm::mod(cam_pos, grid_data.cell_half_size * 2.0f);
 
 	Camera orth_cam;
-
-	orth_cam.look_at(glm::vec3(0.0f, 0.1f, 0.4f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	//orth_cam.set_orthographic(-grid_data.grid_width * 0.5, grid_data.grid_width * 0.5, -grid_data.grid_height * 0.5, grid_data.grid_height * 0.5, -grid_data.grid_depth * 0.5, grid_data.grid_depth * 0.5);
+	//orth_cam.look_at(glm::vec3(0.0f, 0.1f, 0.4f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	orth_cam.set_orthographic(-grid_data.grid_width * 0.01, grid_data.grid_width * 0.01, -grid_data.grid_height * 0.01, grid_data.grid_height * 0.01, -grid_data.grid_depth * 0.5, grid_data.grid_depth * 0.5);
 
 	voxelizer_uniforms.width = webgpu_context->screen_width;
 	voxelizer_uniforms.height = webgpu_context->screen_height;
@@ -224,7 +223,7 @@ void VoxelizationRenderer::init_bindings_rasterizer(std::vector<MeshInstance3D*>
 	voxelizer_uniforms.viewProjectionMatrix = projection;// *nodes[0]->get_global_model();
 	voxelizer_uniforms.model = nodes[0]->get_model();
 
-	glm::mat4x4 projection_matrix = orth_cam.get_projection();
+	//glm::mat4x4 projection_matrix = orth_cam.get_projection();
 
 	uniformsBuffer.binding = 2;
 	uniformsBuffer.buffer_size = sizeof(UBO);

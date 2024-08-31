@@ -38,7 +38,7 @@ int VCTRenderer::initialize(GLFWwindow* window, bool use_mirror_screen)
     camera = new FlyoverCamera();
 
     camera->set_perspective(glm::radians(45.0f), webgpu_context->render_width / static_cast<float>(webgpu_context->render_height), z_near, z_far);
-    camera->look_at(glm::vec3(0.0f, 0.1f, 0.4f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    camera->look_at(glm::vec3(0.0f, 0.0f, 4.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     camera->set_mouse_sensitivity(0.004f);
     camera->set_speed(0.75f);
 

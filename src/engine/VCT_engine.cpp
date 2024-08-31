@@ -29,15 +29,22 @@ int VCTEngine::initialize(Renderer* renderer, GLFWwindow* window, bool use_glfw,
 
 	//entities.push_back(skybox);
 	
-	MeshInstance3D* monkey = parse_mesh("data/meshes/triangle/triangle_blender.obj");
+	MeshInstance3D* monkey = parse_mesh("data/meshes/monkey.obj");
 	//monkey->scale(glm::vec3(50.0f));
-	monkey->translate(glm::vec3(0.0f, 0.0f, -5.0f));
+	//monkey->translate(glm::vec3(0.0f, 0.0f, -5.0f));
 	//entities.push_back(monkey);
 
-	std::vector<Node3D*> loaded_entities;
-	parse_scene("data/meshes/triangle/Triangle.gltf", loaded_entities);
+	MeshInstance3D* triangle = new MeshInstance3D();
+	Surface* surface = new Surface();
 
-	MeshInstance3D* triangle = static_cast<MeshInstance3D*>(loaded_entities[0]->get_children()[0]);
+	std::vector<InterleavedData> vertices = {
+		{ .position = { -0.25, 0.0, 0.0} },
+		{ .position = {  0.25, 0.0, 0.0} },
+		{ .position = { -0.25, 0.25, 0.0} }
+	};
+
+	surface->create_from_vertices(vertices);
+	triangle->add_surface(surface);
 
 	MeshInstance3D* monkey2 = parse_mesh("data/meshes/sphere.obj");
 	monkey2->scale(glm::vec3(1));
