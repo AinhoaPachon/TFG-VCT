@@ -17,7 +17,8 @@ struct UBO {
     screenHeight: u32,
     padding0 : u32,
     padding1 : u32,
-    modelViewProjectionMatrix: mat4x4<f32>
+    viewProjectionMatrix: mat4x4<f32>,
+    modelMatrix: mat4x4<f32>
 };
 
 struct Vertex { 
@@ -71,7 +72,7 @@ fn get_min_max(v1: vec3<f32>, v2: vec3<f32>, v3: vec3<f32>) -> vec4<f32> {
 fn color_pixel(x: u32, y: u32, r: u32, g: u32, b: u32) {
     let pixelID = u32(x + y * uniforms.screenWidth) * 4u;
   
-    atomicMax(&outputColorBuffer.values[pixelID + 0u], 255);
+    atomicMax(&outputColorBuffer.values[pixelID + 0u], r);
     atomicMax(&outputColorBuffer.values[pixelID + 1u], g);
     atomicMax(&outputColorBuffer.values[pixelID + 2u], b);
 }
@@ -86,19 +87,19 @@ fn draw_triangle(v1: vec3<f32>, v2: vec3<f32>, v3: vec3<f32>) {
     for (var x: u32 = startX; x <= endX; x = x + 1u) {
         for (var y: u32 = startY; y <= endY; y = y + 1u) {
             let bc = barycentric(v1, v2, v3, vec2<f32>(f32(x), f32(y))); 
-            let color = (bc.x * v1.z + bc.y * v2.z + bc.z * v3.z);
+            let color = (bc.x * v1.z + bc.y * v2.z + bc.z * v3.z);// * 50.0 - 400.0;
 
-            // let R = color;
-            // let G = color;
-            // let B = color;
+            let R = color;
+            let G = color;
+            let B = color;
 
-            let R = 255;
-            let G = 0;
-            let B = 0;
+            // let R = 255;
+            // let G = 0;
+            // let B = 0;
 
-            // if (bc.x < 0.0 || bc.y < 0.0 || bc.z < 0.0) {
-            //     continue;
-            // }
+            if (bc.x < 0.0 || bc.y < 0.0 || bc.z < 0.0) {
+                continue;
+            }
             color_pixel(x, y, u32(R), u32(G), u32(B));
         }
     }
@@ -116,12 +117,10 @@ fn draw_line(v1: vec3<f32>, v2: vec3<f32>) {
     }
 }
 
-fn project(position: vec3f) -> vec3<f32> {
-    var screenPos = uniforms.modelViewProjectionMatrix * vec4<f32>(position, 1.0);
-    // screenPos.x = (screenPos.x / screenPos.w); // * f32(uniforms.screenWidth);
-    // screenPos.y = (screenPos.y / screenPos.w); // * f32(uniforms.screenHeight);
+fn project(vertex: Vertex) -> vec3<f32> {
+    var screenPos = uniforms.modelMatrix * uniforms.viewProjectionMatrix * vec4<f32>(vertex.position, 1.0);
 
-    screenPos.x = screenPos.y * 0.5 + 0.5;
+    screenPos.x = screenPos.x * 0.5 + 0.5;
     screenPos.y = screenPos.y * 0.5 + 0.5;
 
     screenPos.x = screenPos.x * f32(uniforms.screenWidth);
@@ -142,11 +141,9 @@ fn is_off_screen(v: vec3<f32>) -> bool {
 fn compute(@builtin(global_invocation_id) global_id : vec3<u32>) {
     let index = global_id.x * 3u;
     
-    let v0 = project(vertexBuffer.values[index + 0u].position);
-
-    let v1 = project(vec3f(0.0, 0.0, 0.0));
-    let v2 = project(vec3f(1.0, 0.0, 0.0));
-    let v3 = project(vec3f(0.0, 1.0, 0.0));
+    let v1 = project(vertexBuffer.values[index + 0u]);
+    let v2 = project(vertexBuffer.values[index + 1u]);
+    let v3 = project(vertexBuffer.values[index + 2u]);
 
     if (is_off_screen(v1) || is_off_screen(v2) || is_off_screen(v3)) {
         return;

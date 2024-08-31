@@ -32,7 +32,8 @@ class VoxelizationRenderer {
         int height;
         int padding0;
         int padding1;
-        glm::mat4x4 modelViewProjectionMatrix;
+        glm::mat4x4 viewProjectionMatrix;
+        glm::mat4x4 model;
     } voxelizer_uniforms;
 
     struct Uniforms {
@@ -55,10 +56,6 @@ class VoxelizationRenderer {
     Uniform			voxel_voxelGridPointsBuffer;
     Uniform         voxel_vertexBuffer;
     Uniform         voxel_vertexCount;
-    Uniform         voxel_meshCountBuffer;
-    Uniform         voxel_voxelColorBuffer;
-    Uniform         voxel_meshColorsBuffer;
-    Uniform         voxel_vertexColorBuffer;
 
     Uniform         colorBuffer;
     Uniform         uniformsBuffer;

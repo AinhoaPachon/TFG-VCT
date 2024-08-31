@@ -151,7 +151,7 @@ void VCTRenderer::render()
 
 void VCTRenderer::init_voxelization(std::vector<MeshInstance3D*> nodes)
 {
-    voxelization_renderer.initialize(nodes, camera_2d);
+    voxelization_renderer.initialize(nodes, camera);
 }
 
 void VCTRenderer::render_screen(WGPUTextureView swapchain_view)

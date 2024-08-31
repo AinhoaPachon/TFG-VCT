@@ -29,9 +29,9 @@ int VCTEngine::initialize(Renderer* renderer, GLFWwindow* window, bool use_glfw,
 
 	//entities.push_back(skybox);
 	
-	MeshInstance3D* monkey = parse_mesh("data/meshes/cube.obj");
-	monkey->scale(glm::vec3(1.0f));
-	monkey->translate(glm::vec3(0.0f, 0.0f, 0.0f));
+	MeshInstance3D* monkey = parse_mesh("data/meshes/triangle/triangle_blender.obj");
+	//monkey->scale(glm::vec3(50.0f));
+	monkey->translate(glm::vec3(0.0f, 0.0f, -5.0f));
 	//entities.push_back(monkey);
 
 	std::vector<Node3D*> loaded_entities;
@@ -60,7 +60,7 @@ int VCTEngine::initialize(Renderer* renderer, GLFWwindow* window, bool use_glfw,
 	//material.emissive = glm::vec3(0.6f, 0.2f, 0.45f);
 	monkey2->set_surface_material_override(monkey2->get_surface(0), material);
 
-	voxelized_nodes.push_back(triangle);
+	voxelized_nodes.push_back(monkey);
 	//voxelized_nodes.push_back(monkey2);
 
 	Light3D* light = new OmniLight3D();
