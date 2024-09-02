@@ -73,9 +73,9 @@ fn get_min_max(v1: vec3<f32>, v2: vec3<f32>, v3: vec3<f32>) -> vec4<f32> {
 fn color_pixel(x: u32, y: u32, r: u32, g: u32, b: u32) {
     let pixelID = u32(x + y * uniforms.screenWidth) * 4u;
   
-    atomicMin(&outputColorBuffer.values[pixelID + 0u], r);
-    atomicMin(&outputColorBuffer.values[pixelID + 1u], g);
-    atomicMin(&outputColorBuffer.values[pixelID + 2u], b);
+    atomicStore(&outputColorBuffer.values[pixelID + 0u], r);
+    atomicStore(&outputColorBuffer.values[pixelID + 1u], g);
+    atomicStore(&outputColorBuffer.values[pixelID + 2u], b);
 }
 
 fn draw_triangle(v1: vec3<f32>, v2: vec3<f32>, v3: vec3<f32>, ind: u32) {
