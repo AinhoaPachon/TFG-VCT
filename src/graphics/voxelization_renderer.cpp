@@ -229,7 +229,16 @@ void VoxelizationRenderer::init_bindings_rasterizer(std::vector<MeshInstance3D*>
 	uniformsBuffer.buffer_size = sizeof(UBO);
 	uniformsBuffer.data = webgpu_context->create_buffer(uniformsBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Uniform, &voxelizer_uniforms, "uniforms");
 
-	std::vector<Uniform*> uniforms = { &voxel_vertexBuffer, &voxel_vertexCount, &uniformsBuffer };
+	std::vector<int> maximumProjectionCheck;
+	for (int i = 0; i < vertices.size()/3; i++) {
+		maximumProjectionCheck.push_back(0);
+	}
+
+	maximumProjectionTest.binding = 3;
+	maximumProjectionTest.buffer_size = maximumProjectionCheck.size() * sizeof(int);
+	maximumProjectionTest.data = webgpu_context->create_buffer(maximumProjectionTest.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Storage, maximumProjectionCheck.data(), "uniforms");
+
+	std::vector<Uniform*> uniforms = { &voxel_vertexBuffer, &voxel_vertexCount, &uniformsBuffer, &maximumProjectionTest };
 	voxelization_bindgroup = webgpu_context->create_bind_group(uniforms, voxelization_shader, 0);
 
 	uniforms = { &colorBuffer };
@@ -357,6 +366,8 @@ void VoxelizationRenderer::clean()
 
 	colorBuffer.destroy();
 	uniformsBuffer.destroy();
+
+	maximumProjectionTest.destroy();
 
 	wgpuBindGroupRelease(voxelization_bindgroup);
 }

@@ -63,6 +63,8 @@ class VoxelizationRenderer {
 
     Uniform         voxel_cell_size;
 
+    Uniform         maximumProjectionTest;
+
     Pipeline		render_voxelization_pipeline;
     WGPUBindGroup   render_voxelization_bind_group = nullptr;
     WGPUBindGroup   voxelization_rasterizer_bind_group = nullptr;

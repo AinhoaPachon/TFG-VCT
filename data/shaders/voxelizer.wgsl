@@ -43,6 +43,7 @@ struct VertexBuffer {
 @group(0) @binding(0) var<storage, read_write> vertexBuffer : VertexBuffer;
 @group(0) @binding(1) var<storage, read_write> vertexCount: u32;
 @group(0) @binding(2) var<uniform> uniforms : UBO;
+@group(0) @binding(3) var<storage, read_write> maximumProjectionTest: array<u32>;
 @group(1) @binding(0) var<storage, read_write> outputColorBuffer : ColorBuffer;
 
 // From: https://github.com/ssloy/tinyrenderer/wiki/Lesson-2:-Triangle-rasterization-and-back-face-culling
@@ -77,7 +78,7 @@ fn color_pixel(x: u32, y: u32, r: u32, g: u32, b: u32) {
     atomicMin(&outputColorBuffer.values[pixelID + 2u], b);
 }
 
-fn draw_triangle(v1: vec3<f32>, v2: vec3<f32>, v3: vec3<f32>) {
+fn draw_triangle(v1: vec3<f32>, v2: vec3<f32>, v3: vec3<f32>, ind: u32) {
     let min_max = get_min_max(v1, v2, v3);
     let startX = u32(min_max.x);
     let startY = u32(min_max.y);
@@ -87,12 +88,27 @@ fn draw_triangle(v1: vec3<f32>, v2: vec3<f32>, v3: vec3<f32>) {
     for (var x: u32 = startX; x <= endX; x = x + 1u) {
         for (var y: u32 = startY; y <= endY; y = y + 1u) {
             let bc = barycentric(v1, v2, v3, vec2<f32>(f32(x), f32(y))); 
-            let color = (bc.x * v1.z + bc.y * v2.z + bc.z * v3.z);// * 50.0 - 400.0;
+            let color = (bc.x * v1.z + bc.y * v2.z + bc.z * v3.z) * 2.0;// * 50.0 - 400.0;
 
-            let R = color;
-            let G = color;
-            let B = color;
-
+            // let R = color;
+            // let G = color;
+            // let B = color;
+            var R: u32;
+            var G: u32;
+            var B: u32;
+            if (ind == 0) {
+                R = 255;
+                G = 0;
+                B = 0;
+            } else if (ind == 1) {
+                R = 0;
+                G = 255;
+                B = 0;
+            } else { 
+                R = 0;
+                G = 0;
+                B = 255;
+            }
             // let R = 255;
             // let G = 0;
             // let B = 0;
@@ -147,6 +163,24 @@ fn is_off_screen(v: vec3<f32>) -> bool {
     return false;
 }
 
+fn select_dominant_axis(v1: Vertex, v2: Vertex, v3: Vertex) -> u32 {
+    let p1 = v2.position - v1.position;
+    let p2 = v3.position - v1.position;
+    let p = abs(cross(p1, p2));
+
+    var dominantAxis: u32;
+    if(p.z > p.x && p.z > p.y)
+    {
+        dominantAxis = 2;
+    } else if (p.x > p.y && p.x > p.z) {
+        dominantAxis = 0;
+    } else {
+        dominantAxis = 1;
+    }
+
+    return dominantAxis;
+}
+
 @compute @workgroup_size(1, 1)
 fn compute(@builtin(global_invocation_id) global_id : vec3<u32>) {
     let index = global_id.x * 3u;
@@ -161,7 +195,11 @@ fn compute(@builtin(global_invocation_id) global_id : vec3<u32>) {
 
     var vertex_count : u32 = vertexCount;
 
-    draw_triangle(v1, v2, v3);
+    maximumProjectionTest[global_id.x] = select_dominant_axis(vertexBuffer.values[index + 0u],
+                                                            vertexBuffer.values[index + 1u],
+                                                            vertexBuffer.values[index + 2u]);
+
+    draw_triangle(v1, v2, v3, maximumProjectionTest[global_id.x]); //ahora esto lo ignoraremos y pasaremos a non-conservative rasterization
 }
 
 
