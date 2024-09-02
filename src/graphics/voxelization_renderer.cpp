@@ -213,14 +213,20 @@ void VoxelizationRenderer::init_bindings_rasterizer(std::vector<MeshInstance3D*>
 	glm::mat4x4 projection = camera->get_view_projection();
 	////cam_pos -= glm::mod(cam_pos, grid_data.cell_half_size * 2.0f);
 
+	float voxel_size = 0.01f;
+
 	Camera orth_cam;
 	//orth_cam.look_at(glm::vec3(0.0f, 0.1f, 0.4f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	orth_cam.set_orthographic(-grid_data.grid_width * 0.01, grid_data.grid_width * 0.01, -grid_data.grid_height * 0.01, grid_data.grid_height * 0.01, -grid_data.grid_depth * 0.5, grid_data.grid_depth * 0.5);
+	orth_cam.set_orthographic(
+		-grid_data.grid_width * 0.5 * voxel_size, grid_data.grid_width * 0.5 * voxel_size,
+		-grid_data.grid_height * 0.5 * voxel_size, grid_data.grid_height * 0.5 * voxel_size,
+		-grid_data.grid_depth * 0.5 * voxel_size, grid_data.grid_depth * 0.5 * voxel_size
+	);
 
 	voxelizer_uniforms.width = webgpu_context->screen_width;
 	voxelizer_uniforms.height = webgpu_context->screen_height;
-	//voxelizer_uniforms.viewProjectionMatrix = orth_cam.get_projection();// *nodes[0]->get_global_model();
-	voxelizer_uniforms.viewProjectionMatrix = projection;// *nodes[0]->get_global_model();
+	voxelizer_uniforms.viewProjectionMatrix = orth_cam.get_projection();// *nodes[0]->get_global_model();
+	//voxelizer_uniforms.viewProjectionMatrix = projection;// *nodes[0]->get_global_model();
 	voxelizer_uniforms.model = nodes[0]->get_model();
 
 	//glm::mat4x4 projection_matrix = orth_cam.get_projection();
