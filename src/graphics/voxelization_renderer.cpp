@@ -218,12 +218,20 @@ void VoxelizationRenderer::init_bindings_rasterizer(std::vector<MeshInstance3D*>
 	std::vector<Uniform*> uniforms = { &voxel_vertexBuffer, &voxel_vertexCount, &uniformsBuffer };
 	voxelization_bindgroup = webgpu_context->create_bind_group(uniforms, voxelization_shader, 0);
 
-	texture3D.create(WGPUTextureDimension_3D, WGPUTextureFormat_RGBA32Float, { uint32_t(voxelizer_uniforms.grid_width), uint32_t(voxelizer_uniforms.grid_height), uint32_t(voxelizer_uniforms.grid_depth) }, WGPUTextureUsage_CopyDst, 0, 0, nullptr);
+	std::vector<glm::vec4> texture_values;
+	for (int i = 0; i < voxelizer_uniforms.grid_width * voxelizer_uniforms.grid_height * voxelizer_uniforms.grid_depth * 4; ++i) {
+		texture_values.push_back(glm::uvec4(255, 255, 255, 255));
+	}
+
+	texture3D.create(WGPUTextureDimension_3D, 
+		WGPUTextureFormat_RGBA8Unorm, 
+		{ uint32_t(voxelizer_uniforms.grid_width), uint32_t(voxelizer_uniforms.grid_height), uint32_t(voxelizer_uniforms.grid_depth) }, 
+		static_cast<WGPUTextureUsage>(WGPUTextureUsage_TextureBinding | WGPUTextureUsage_StorageBinding | WGPUTextureUsage_CopyDst), 1, 1, texture_values.data());
 
 	textureBuffer.binding = 1;
-	textureBuffer.data = texture3D.get_view();
+	textureBuffer.data = texture3D.get_view(WGPUTextureViewDimension_3D);
 
-	uniforms = { &colorBuffer, &textureBuffer };
+	uniforms = { &textureBuffer };
 	color_buffer_bindgroup = webgpu_context->create_bind_group(uniforms, voxelization_shader, 1);
 	//render_color_buffer_bindgroup = webgpu_context->create_bind_group(uniforms, render_voxelization_shader, 1);
 }

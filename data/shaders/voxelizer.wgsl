@@ -35,8 +35,8 @@ struct VertexBuffer {
 @group(0) @binding(0) var<storage, read_write> vertexBuffer : VertexBuffer;
 @group(0) @binding(1) var<storage, read_write> vertexCount: u32;
 @group(0) @binding(2) var<uniform> uniforms : UBO;
-@group(1) @binding(0) var<storage, read_write> outputColorBuffer : ColorBuffer;
-@group(1) @binding(1) var texture3D: texture_storage_3d<rgba16uint, read_write>;
+// @group(1) @binding(0) var<storage, read_write> outputColorBuffer : ColorBuffer;
+@group(1) @binding(1) var texture3D: texture_storage_3d<rgba8unorm, write>;
 
 // From: https://github.com/ssloy/tinyrenderer/wiki/Lesson-2:-Triangle-rasterization-and-back-face-culling
 fn barycentric(v1: vec3<f32>, v2: vec3<f32>, v3: vec3<f32>, p: vec2<f32>) -> vec3<f32> {
@@ -64,7 +64,7 @@ fn get_min_max(v1: vec4<f32>, v2: vec4<f32>, v3: vec4<f32>) -> array<f32, 6> {
     return min_max;
 }
 
-fn color_pixel(screen_coords: vec3<u32>, r: u32, g: u32, b: u32) {
+fn color_pixel(screen_coords: vec3<u32>, r: f32, g: f32, b: f32) {
     // let pixelID = u32(x + y * uniforms.gridWidth) * 4u;
   
     // // aquí se guardará en la imagen
@@ -72,7 +72,7 @@ fn color_pixel(screen_coords: vec3<u32>, r: u32, g: u32, b: u32) {
     // atomicStore(&outputColorBuffer.values[pixelID + 1u], g);
     // atomicStore(&outputColorBuffer.values[pixelID + 2u], b);
 
-    textureStore(texture3D, screen_coords, vec4<u32>(u32(r), u32(g), u32(b), 1u));
+    textureStore(texture3D, screen_coords, vec4f(r, g, b, 1.0));
 }
 
 fn draw_triangle(triangleVertices: array<vec4f, 3>) {
@@ -90,13 +90,13 @@ fn draw_triangle(triangleVertices: array<vec4f, 3>) {
                 // let bc = barycentric(v1, v2, v3, vec2<f32>(f32(x), f32(y))); 
                 // let color = (bc.x * v1.z + bc.y * v2.z + bc.z * v3.z) * 2.0;// * 50.0 - 400.0;
 
-                var R: u32;
-                var G: u32;
-                var B: u32;
+                var R: f32;
+                var G: f32;
+                var B: f32;
 
-                R = 255;
-                G = 0;
-                B = 0;
+                R = 255.0;
+                G = 0.0;
+                B = 0.0;
 
                 // if (ind == 0) {
                 //     R = 255;
@@ -185,12 +185,12 @@ fn compute(@builtin(global_invocation_id) global_id : vec3<u32>) {
     var verticesTriangle : array<vec4f, 3> = array<vec4f, 3>(v1, v2, v3);
     var verticesProjectedTriangle : array<vec4f, 3> = select_dominant_axis(verticesTriangle);
 
+    // Convert to texture(?) space
     for(var i: u32 = 0; i < 3; i++){
         var temp: vec3f = screen_space(verticesProjectedTriangle[i].xyz);
         verticesProjectedTriangle[i] = vec4f(temp, 1.0);
     }
 
-    // Convert to clip space
     draw_triangle(verticesProjectedTriangle); //ahora esto lo ignoraremos y pasaremos a non-conservative rasterization
 
 

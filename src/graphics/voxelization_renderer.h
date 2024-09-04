@@ -20,9 +20,9 @@ class VoxelizationRenderer {
     int             number_triangles;
 
     struct UBO {
-        int grid_width;
-        int grid_height;
-        int grid_depth;
+        int grid_width = 256;
+        int grid_height = 256;
+        int grid_depth = 256;
         int padding1;
         glm::mat4x4 viewProjectionMatrix;
         glm::mat4x4 model;
