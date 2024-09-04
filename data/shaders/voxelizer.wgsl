@@ -79,16 +79,21 @@ fn draw_triangle(triangleVertices: array<vec4f, 3>) {
     let min_max = get_min_max(triangleVertices[0], triangleVertices[1], triangleVertices[2]);
     let startX = u32(min_max[0]);
     let startY = u32(min_max[1]);
-    let startZ = u32(min_max[2]);
+    // let startZ = u32(min_max[2]);
     let endX = u32(min_max[3]);
     let endY = u32(min_max[4]);
-    let endZ = u32(min_max[5]);
+    // let endZ = u32(min_max[5]);
+
+    let v1 : vec3f = triangleVertices[0].xyz;
+    let v2 : vec3f = triangleVertices[1].xyz;
+    let v3 : vec3f = triangleVertices[2].xyz;
 
     for (var x: u32 = startX; x <= endX; x = x + 1u) {
         for (var y: u32 = startY; y <= endY; y = y + 1u) {
-            for (var z: u32 = startZ; z <= endZ; z = z + 1u) {
-                // let bc = barycentric(v1, v2, v3, vec2<f32>(f32(x), f32(y))); 
+            // for (var z: u32 = startZ; z <= endZ; z = z + 1u) {
+                let bc = barycentric(v1, v2, v3, vec2<f32>(f32(x), f32(y))); 
                 // let color = (bc.x * v1.z + bc.y * v2.z + bc.z * v3.z) * 2.0;// * 50.0 - 400.0;
+                let z = (bc.x * v1.z + bc.y * v2.z + bc.z * v3.z);// * 50.0 - 400.0;
 
                 var R: f32;
                 var G: f32;
@@ -117,8 +122,8 @@ fn draw_triangle(triangleVertices: array<vec4f, 3>) {
                 // }
 
                 // Remember to multiply by 255 when not storing depth
-                color_pixel(vec3<u32>(x, y, z), R, G, B);
-            }
+                color_pixel(vec3<u32>(x, y, u32(z)), R, G, B);
+            // }
         }
     }
 }
