@@ -19,18 +19,10 @@ class VoxelizationRenderer {
     Surface         quad_surface;
     int             number_triangles;
 
-    struct gridData {
-        glm::vec4 bounds_min;
-        float cell_half_size;
+    struct UBO {
         int grid_width;
         int grid_height;
         int grid_depth;
-    } grid_data;
-
-    struct UBO {
-        int width;
-        int height;
-        int padding0;
         int padding1;
         glm::mat4x4 viewProjectionMatrix;
         glm::mat4x4 model;
@@ -52,7 +44,6 @@ class VoxelizationRenderer {
 
     Shader*         render_voxelization_shader = nullptr;
 
-    Uniform			voxel_gridDataBuffer;
     Uniform			voxel_voxelGridPointsBuffer;
     Uniform         voxel_vertexBuffer;
     Uniform         voxel_vertexCount;
@@ -62,8 +53,9 @@ class VoxelizationRenderer {
     Uniform         renderUniformsBuffer;
 
     Uniform         voxel_cell_size;
+    Uniform         textureBuffer;
 
-    Uniform         maximumProjectionTest;
+    Texture         texture3D;
 
     Pipeline		render_voxelization_pipeline;
     WGPUBindGroup   render_voxelization_bind_group = nullptr;
