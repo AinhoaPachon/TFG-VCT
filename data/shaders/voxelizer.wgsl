@@ -75,7 +75,8 @@ fn color_pixel(screen_coords: vec3<u32>, r: f32, g: f32, b: f32) {
     textureStore(texture3D, screen_coords, vec4f(r, g, b, 1.0));
 }
 
-fn draw_triangle(triangleVertices: array<vec4f, 3>) {
+fn draw_triangle(triangleVertices: array<vec4f, 3>, verticesWorld: array<vec4f, 3>) 
+{
     let min_max = get_min_max(triangleVertices[0], triangleVertices[1], triangleVertices[2]);
     let startX = u32(min_max[0]);
     let startY = u32(min_max[1]);
@@ -88,12 +89,19 @@ fn draw_triangle(triangleVertices: array<vec4f, 3>) {
     let v2 : vec3f = triangleVertices[1].xyz;
     let v3 : vec3f = triangleVertices[2].xyz;
 
+    let v1_world : vec3f = screen_space(verticesWorld[0].xyz);
+    let v2_world : vec3f = screen_space(verticesWorld[1].xyz);
+    let v3_world : vec3f = screen_space(verticesWorld[2].xyz);
+
     for (var x: u32 = startX; x <= endX; x = x + 1u) {
         for (var y: u32 = startY; y <= endY; y = y + 1u) {
             // for (var z: u32 = startZ; z <= endZ; z = z + 1u) {
                 let bc = barycentric(v1, v2, v3, vec2<f32>(f32(x), f32(y))); 
                 // let color = (bc.x * v1.z + bc.y * v2.z + bc.z * v3.z) * 2.0;// * 50.0 - 400.0;
-                let z = (bc.x * v1.z + bc.y * v2.z + bc.z * v3.z);// * 50.0 - 400.0;
+
+                let x = (bc.x * v1_world.x + bc.y * v2_world.x + bc.z * v3_world.x);// * 50.0 - 400.0;
+                let y = (bc.x * v1_world.y + bc.y * v2_world.y + bc.z * v3_world.y);// * 50.0 - 400.0;
+                let z = (bc.x * v1_world.z + bc.y * v2_world.z + bc.z * v3_world.z);// * 50.0 - 400.0;
 
                 var R: f32;
                 var G: f32;
@@ -122,7 +130,7 @@ fn draw_triangle(triangleVertices: array<vec4f, 3>) {
                 // }
 
                 // Remember to multiply by 255 when not storing depth
-                color_pixel(vec3<u32>(x, y, u32(z)), R, G, B);
+                color_pixel(vec3<u32>(u32(x), u32(y), u32(z)), R, G, B);
             // }
         }
     }
@@ -165,11 +173,11 @@ fn select_dominant_axis(verticesPrevTriangle: array<vec4f, 3>) -> array<vec4f, 3
         let worldPositionFrag = verticesPrevTriangle[i];
         if(p.z > p.x && p.z > p.y)
         {
-            position = vec4f(worldPositionFrag.x, worldPositionFrag.y, 0, 1);
+            position = vec4f(worldPositionFrag.x, worldPositionFrag.y, 0.0 , 1);
         } else if (p.x > p.y && p.x > p.z) {
-            position = vec4f(worldPositionFrag.y, worldPositionFrag.z, 0, 1);
+            position = vec4f(worldPositionFrag.y, worldPositionFrag.z, 0.0, 1);
         } else {
-            position = vec4f(worldPositionFrag.x, worldPositionFrag.z, 0, 1);
+            position = vec4f(worldPositionFrag.x, worldPositionFrag.z, 0.0, 1);
         }
         verticesFinalTriangle[i] = position;
     }
@@ -196,7 +204,7 @@ fn compute(@builtin(global_invocation_id) global_id : vec3<u32>) {
         verticesProjectedTriangle[i] = vec4f(temp, 1.0);
     }
 
-    draw_triangle(verticesProjectedTriangle); //ahora esto lo ignoraremos y pasaremos a non-conservative rasterization
+    draw_triangle(verticesProjectedTriangle, verticesTriangle); //ahora esto lo ignoraremos y pasaremos a non-conservative rasterization
 
 
     // if (is_off_screen(v1) || is_off_screen(v2) || is_off_screen(v3)) {
