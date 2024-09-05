@@ -176,25 +176,6 @@ void VoxelizationRenderer::init_bindings_rasterizer(std::vector<MeshInstance3D*>
 	colorBuffer.buffer_size = sizeof(float) * webgpu_context->screen_width * webgpu_context->screen_height * 4;
 	colorBuffer.data = webgpu_context->create_buffer(colorBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Storage, color_values.data(), "colors rasterizer");
 
-	Surface* surface = nodes[0]->get_surface(0);
-	WGPUBuffer vertex_buffer = surface->get_vertex_buffer();
-
-	std::vector<InterleavedData> vertices = surface->get_vertices();
-
-	// Positions of the vertices
-	voxel_vertexBuffer.binding = 0;
-	voxel_vertexBuffer.buffer_size = sizeof(InterleavedData) * vertices.size();
-	voxel_vertexBuffer.data = webgpu_context->create_buffer(voxel_vertexBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Storage, vertices.data(), "vertex buffer");
-
-	int vertex_count = number_triangles = surface->get_vertex_count();
-	voxel_vertexCount.binding = 1;
-	voxel_vertexCount.buffer_size = sizeof(int);
-	voxel_vertexCount.data = webgpu_context->create_buffer(voxel_vertexCount.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Storage, &vertex_count, "vertex count");
-
-	glm::vec3 cam_pos = camera->get_eye();
-	glm::mat4x4 projection = camera->get_view_projection();
-	////cam_pos -= glm::mod(cam_pos, grid_data.cell_half_size * 2.0f);
-
 	float voxel_size = 0.01f;
 
 	Camera orth_cam;
@@ -215,9 +196,54 @@ void VoxelizationRenderer::init_bindings_rasterizer(std::vector<MeshInstance3D*>
 	uniformsBuffer.buffer_size = sizeof(UBO);
 	uniformsBuffer.data = webgpu_context->create_buffer(uniformsBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Uniform, &voxelizer_uniforms, "uniforms");
 
-	std::vector<Uniform*> uniforms = { &voxel_vertexBuffer, &voxel_vertexCount, &uniformsBuffer };
-	voxelization_bindgroup = webgpu_context->create_bind_group(uniforms, voxelization_shader, 0);
+	std::vector<Uniform*> uniforms;
 
+	int surface_counter = 0;
+
+	for (MeshInstance3D* node : nodes) {
+		std::vector<Surface*> surfaces = node->get_surfaces();
+		surface_counter += surfaces.size();
+	}
+	voxelization_RasterData.resize(surface_counter);
+
+	int counter = 0;
+	for (MeshInstance3D* node : nodes) {
+		std::vector<Surface*> surfaces = node->get_surfaces();
+		for (Surface* surface : surfaces) {
+
+			SurfaceRasterData* raster_data_temp = new SurfaceRasterData;
+
+			WGPUBuffer vertex_buffer = surface->get_vertex_buffer();
+
+			std::vector<InterleavedData> vertices = surface->get_vertices();
+
+			// Positions of the vertices
+			voxel_vertexBuffer.binding = 0;
+			voxel_vertexBuffer.buffer_size = sizeof(InterleavedData) * vertices.size();
+			voxel_vertexBuffer.data = webgpu_context->create_buffer(voxel_vertexBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Storage, vertices.data(), "vertex buffer");
+
+			Material mat = surface->get_material();
+			glm::vec4 color = mat.color;
+
+			Uniform colorBuffer;
+			colorBuffer.binding = 1;
+			colorBuffer.buffer_size = sizeof(glm::vec4);
+			colorBuffer.data = webgpu_context->create_buffer(colorBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Storage, &color, "color buffer");
+
+			uniforms = { &voxel_vertexBuffer, &colorBuffer, &uniformsBuffer };
+			
+			WGPUBindGroup bindgroup = webgpu_context->create_bind_group(uniforms, voxelization_shader, 0);
+			int number_triangles = surface->get_vertex_count();
+
+			raster_data_temp->voxelization_bindgroup = bindgroup;
+			raster_data_temp->voxel_vertexBuffer = voxel_vertexBuffer;
+			raster_data_temp->number_triangles = number_triangles;
+
+			voxelization_RasterData[counter] = raster_data_temp;
+			counter++;
+		}
+	}
+	
 	std::vector<uint8_t> texture_values;
 	texture_values.resize(voxelizer_uniforms.grid_width * voxelizer_uniforms.grid_height * voxelizer_uniforms.grid_depth * 4);
 
@@ -256,18 +282,23 @@ void VoxelizationRenderer::on_compute()
 
 	// Use compute pass
 	voxelization_pipeline.set(computePass);
-	wgpuComputePassEncoderSetBindGroup(computePass, 0, voxelization_bindgroup, 0, nullptr);
-	wgpuComputePassEncoderSetBindGroup(computePass, 1, color_buffer_bindgroup, 0, nullptr);
 
-	/*
-	Instead of providing a single number of concurrent calls, we express this number as a grid (sipatch) of x * y * z workgroups (groups of calls).
-	Each workgroup is a little block of w * h * d threads, each of which runs the entry point.
-	w * h * d should be multiple of 32 */
+	for (SurfaceRasterData* surface_raster_data : voxelization_RasterData) {
+	
+		wgpuComputePassEncoderSetBindGroup(computePass, 0, surface_raster_data->voxelization_bindgroup, 0, nullptr);
+		wgpuComputePassEncoderSetBindGroup(computePass, 1, color_buffer_bindgroup, 0, nullptr);
 
-	// Ceil invocationCount / workgroupSize
-	int workgroup_size = number_triangles; // CAMBIAR AL DISPATCH DE UNA VEZ POR TRIANGULO
-	int workgroup_count = ceil(number_triangles / 3);
-	wgpuComputePassEncoderDispatchWorkgroups(computePass, workgroup_count, 1, 1);
+		/*
+		Instead of providing a single number of concurrent calls, we express this number as a grid (sipatch) of x * y * z workgroups (groups of calls).
+		Each workgroup is a little block of w * h * d threads, each of which runs the entry point.
+		w * h * d should be multiple of 32 */
+
+		// Ceil invocationCount / workgroupSize
+		int workgroup_size = surface_raster_data->number_triangles; // CAMBIAR AL DISPATCH DE UNA VEZ POR TRIANGULO
+		int workgroup_count = ceil(surface_raster_data->number_triangles / 3);
+		wgpuComputePassEncoderDispatchWorkgroups(computePass, workgroup_count, 1, 1);
+
+	}
 
 	wgpuComputePassEncoderEnd(computePass);
 
@@ -352,8 +383,6 @@ void VoxelizationRenderer::clean()
 	wgpuBindGroupRelease(render_voxelization_bind_group);
 
 	voxel_vertexBuffer.destroy();
-	voxel_vertexCount.destroy();
-	voxel_cell_size.destroy();
 	renderUniformsBuffer.destroy();
 
 	colorBuffer.destroy();

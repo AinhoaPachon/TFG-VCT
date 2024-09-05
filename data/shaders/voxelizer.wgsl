@@ -33,7 +33,7 @@ struct VertexBuffer {
 };
 
 @group(0) @binding(0) var<storage, read_write> vertexBuffer : VertexBuffer;
-@group(0) @binding(1) var<storage, read_write> vertexCount: u32;
+@group(0) @binding(1) var<storage, read_write> colorBuffer : vec4f;
 @group(0) @binding(2) var<uniform> uniforms : UBO;
 // @group(1) @binding(0) var<storage, read_write> outputColorBuffer : ColorBuffer;
 @group(1) @binding(1) var texture3D: texture_storage_3d<rgba8unorm, write>;
@@ -72,7 +72,7 @@ fn color_pixel(screen_coords: vec3<u32>, r: f32, g: f32, b: f32) {
     // atomicStore(&outputColorBuffer.values[pixelID + 1u], g);
     // atomicStore(&outputColorBuffer.values[pixelID + 2u], b);
 
-    textureStore(texture3D, screen_coords, vec4f(r, g, b, 1.0));
+    textureStore(texture3D, screen_coords, colorBuffer);
 }
 
 fn draw_triangle(triangleVertices: array<vec4f, 3>, verticesWorld: array<vec4f, 3>) 
@@ -210,8 +210,6 @@ fn compute(@builtin(global_invocation_id) global_id : vec3<u32>) {
     // if (is_off_screen(v1) || is_off_screen(v2) || is_off_screen(v3)) {
     //     return;
     // }
-
-    var vertex_count : u32 = vertexCount;
 
 }
 
