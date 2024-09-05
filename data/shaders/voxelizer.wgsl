@@ -164,7 +164,7 @@ fn is_off_screen(v: vec3<f32>) -> bool {
 
 fn select_dominant_axis(verticesPrevTriangle: array<vec4f, 3>) -> array<vec4f, 3> {
     let p1 = verticesPrevTriangle[1] - verticesPrevTriangle[0];
-    let p2 = verticesPrevTriangle[2] - verticesPrevTriangle[2];
+    let p2 = verticesPrevTriangle[2] - verticesPrevTriangle[0];
     let p = abs(cross(p1.xyz, p2.xyz));
 
     var verticesFinalTriangle: array<vec4f, 3>;
