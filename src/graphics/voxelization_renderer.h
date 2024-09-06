@@ -14,8 +14,6 @@ class Node;
 
 class VoxelizationRenderer {
 
-    MeshInstance3D* floor_grid_mesh = nullptr;
-    MeshInstance3D* sphere_mesh = nullptr;
     Surface         quad_surface;
     int             number_triangles;
 
@@ -40,6 +38,13 @@ class VoxelizationRenderer {
         int            number_triangles;
     } raster_data;
 
+    struct PointLight {
+        glm::vec3   position;
+        float       padding0;
+        glm::vec3   color;
+        int         intensity;
+    } light;
+
     std::vector<SurfaceRasterData*> voxelization_RasterData;
 
     bool material_override_color = false;
@@ -47,9 +52,9 @@ class VoxelizationRenderer {
 
     Pipeline		voxelization_pipeline;
     Shader*         voxelization_shader = nullptr;
-    WGPUBindGroup   voxelization_bindgroup = nullptr;
     WGPUBindGroup   color_buffer_bindgroup = nullptr;
     WGPUBindGroup   render_color_buffer_bindgroup = nullptr;
+    WGPUBindGroup   render_lights_buffer_bindgroup = nullptr;
 
     Shader*         render_voxelization_shader = nullptr;
 
@@ -59,12 +64,12 @@ class VoxelizationRenderer {
 
     Uniform         textureBuffer;
     Uniform         voxel_vertexBuffer;
+    Uniform         lightBuffer;
 
     Texture         texture3D;
 
     Pipeline		render_voxelization_pipeline;
     WGPUBindGroup   render_voxelization_bind_group = nullptr;
-    WGPUBindGroup   voxelization_rasterizer_bind_group = nullptr;
 
     WGPUCommandEncoder command_encoder;
 

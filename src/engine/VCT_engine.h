@@ -17,8 +17,6 @@ class VCTEngine : public Engine {
 
 	MeshInstance3D* floor_grid_mesh = nullptr;
 
-	Environment3D* skybox = nullptr;
-
 public:
 	std::vector<Node3D*> entities;
 	std::vector<MeshInstance3D*> voxelized_nodes;

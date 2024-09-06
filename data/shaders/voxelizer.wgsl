@@ -32,11 +32,18 @@ struct VertexBuffer {
     values: array<Vertex>,
 };
 
+struct PointLight { 
+    position: vec3f,
+    color: vec3f,
+    intensity: f32
+};
+
 @group(0) @binding(0) var<storage, read_write> vertexBuffer : VertexBuffer;
 @group(0) @binding(1) var<storage, read_write> colorBuffer : vec4f;
 @group(0) @binding(2) var<uniform> uniforms : UBO;
 // @group(1) @binding(0) var<storage, read_write> outputColorBuffer : ColorBuffer;
 @group(1) @binding(1) var texture3D: texture_storage_3d<rgba8unorm, write>;
+@group(2) @binding(0) var<uniform> lightsBuffer : PointLight;
 
 // From: https://github.com/ssloy/tinyrenderer/wiki/Lesson-2:-Triangle-rasterization-and-back-face-culling
 fn barycentric(v1: vec3<f32>, v2: vec3<f32>, v3: vec3<f32>, p: vec2<f32>) -> vec3<f32> {
@@ -65,14 +72,10 @@ fn get_min_max(v1: vec4<f32>, v2: vec4<f32>, v3: vec4<f32>) -> array<f32, 6> {
 }
 
 fn color_pixel(screen_coords: vec3<u32>, r: f32, g: f32, b: f32) {
-    // let pixelID = u32(x + y * uniforms.gridWidth) * 4u;
   
-    // // aquí se guardará en la imagen
-    // atomicStore(&outputColorBuffer.values[pixelID + 0u], r);
-    // atomicStore(&outputColorBuffer.values[pixelID + 1u], g);
-    // atomicStore(&outputColorBuffer.values[pixelID + 2u], b);
+    // aquí se guardará en la imagen
 
-    textureStore(texture3D, screen_coords, colorBuffer);
+    textureStore(texture3D, screen_coords, colorBuffer + vec4f(lightsBuffer.color, 0.0));
 }
 
 fn draw_triangle(triangleVertices: array<vec4f, 3>, verticesWorld: array<vec4f, 3>) 
@@ -110,24 +113,6 @@ fn draw_triangle(triangleVertices: array<vec4f, 3>, verticesWorld: array<vec4f, 
                 R = 255.0;
                 G = 0.0;
                 B = 0.0;
-
-                // if (ind == 0) {
-                //     R = 255;
-                //     G = 0;
-                //     B = 0;
-                // } else if (ind == 1) {
-                //     R = 0;
-                //     G = 255;
-                //     B = 0;
-                // } else { 
-                //     R = 0;
-                //     G = 0;
-                //     B = 255;
-                // }
-
-                // if (bc.x < 0.0 || bc.y < 0.0 || bc.z < 0.0) {
-                //     continue;
-                // }
 
                 // Remember to multiply by 255 when not storing depth
                 color_pixel(vec3<u32>(u32(x), u32(y), u32(z)), R, G, B);
@@ -182,6 +167,13 @@ fn select_dominant_axis(verticesPrevTriangle: array<vec4f, 3>) -> array<vec4f, 3
         verticesFinalTriangle[i] = position;
     }
     return verticesFinalTriangle;
+}
+
+fn calculatePointLight(light: PointLight, worldPos: vec4f, normalFrag: vec3f) -> vec3f {
+    let direction = normalize(light.position - worldPos.xyz);
+    // let distanceToLight = length(light.position, worldPos.xyz);
+    let d = max(dot(normalize(normalFrag), direction), 0.0f);
+    return d * light.intensity * light.color;
 }
 
 @compute @workgroup_size(1, 1)

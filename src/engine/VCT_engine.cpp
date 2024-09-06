@@ -24,10 +24,6 @@ int VCTEngine::initialize(Renderer* renderer, GLFWwindow* window, bool use_glfw,
 	floor_grid_mesh->set_translation(glm::vec3(0.0f));
 	floor_grid_mesh->rotate(glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 0.0f));
 	floor_grid_mesh->scale(glm::vec3(3.f));
-
-	skybox = new Environment3D();
-
-	//entities.push_back(skybox);
 	
 	MeshInstance3D* monkey = parse_mesh("data/meshes/cornell.obj");
 	monkey->scale({ 0.9, 0.9, 0.9 });
@@ -51,8 +47,6 @@ int VCTEngine::initialize(Renderer* renderer, GLFWwindow* window, bool use_glfw,
 	monkey2->translate(glm::vec3(0.0f, 0.0f, -1.5f));
 	//entities.push_back(monkey2);
 
-	//Surface* surface = monkey->get_surface(0);
-	//surface->set_material_color(glm::vec4(0.5f, 0.4f, 0.0f, 1.0f));
 
 	Material material;
 	material.color = glm::vec4(0.7f, 0.0f, 0.5f, 1.0f);

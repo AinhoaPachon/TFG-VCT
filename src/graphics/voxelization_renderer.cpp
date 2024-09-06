@@ -155,8 +155,6 @@ void VoxelizationRenderer::init_bindings_voxelization_pipeline(std::vector<MeshI
 		uniforms.push_back(&voxel_meshColorsBuffer);
 	}
 	
-	
-
 	std::vector<Uniform*> uniforms = {};
 	*/
 	
@@ -187,10 +185,7 @@ void VoxelizationRenderer::init_bindings_rasterizer(std::vector<MeshInstance3D*>
 	);
 
 	voxelizer_uniforms.viewProjectionMatrix = orth_cam.get_projection();// *nodes[0]->get_global_model();
-	//voxelizer_uniforms.viewProjectionMatrix = projection;// *nodes[0]->get_global_model();
 	voxelizer_uniforms.model = nodes[0]->get_model();
-
-	//glm::mat4x4 projection_matrix = orth_cam.get_projection();
 
 	uniformsBuffer.binding = 2;
 	uniformsBuffer.buffer_size = sizeof(UBO);
@@ -264,6 +259,17 @@ void VoxelizationRenderer::init_bindings_rasterizer(std::vector<MeshInstance3D*>
 	uniforms = { &textureBuffer };
 	color_buffer_bindgroup = webgpu_context->create_bind_group(uniforms, voxelization_shader, 1);
 	//render_color_buffer_bindgroup = webgpu_context->create_bind_group(uniforms, render_voxelization_shader, 1);
+
+	light.position = glm::vec3(0.5);
+	light.color = glm::vec3(1.0, 0.0, 0.0);
+	light.intensity = 1.0f;
+
+	lightBuffer.binding = 0;
+	lightBuffer.buffer_size = sizeof(PointLight);
+	lightBuffer.data = webgpu_context->create_buffer(lightBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Uniform, &light, "light buffer");
+
+	uniforms = { &lightBuffer };
+	render_lights_buffer_bindgroup = webgpu_context->create_bind_group(uniforms, voxelization_shader, 2);
 }
 
 void VoxelizationRenderer::on_compute()
@@ -287,6 +293,7 @@ void VoxelizationRenderer::on_compute()
 	
 		wgpuComputePassEncoderSetBindGroup(computePass, 0, surface_raster_data->voxelization_bindgroup, 0, nullptr);
 		wgpuComputePassEncoderSetBindGroup(computePass, 1, color_buffer_bindgroup, 0, nullptr);
+		wgpuComputePassEncoderSetBindGroup(computePass, 2, render_lights_buffer_bindgroup, 0, nullptr);
 
 		/*
 		Instead of providing a single number of concurrent calls, we express this number as a grid (sipatch) of x * y * z workgroups (groups of calls).
@@ -339,25 +346,6 @@ void VoxelizationRenderer::init_render_pipeline()
 	color_target.blend = &blend_state;
 	color_target.writeMask = WGPUColorWriteMask_All;
 
-	//// Generate uniforms from the swapchain
-	//for (uint8_t i = 0; i < xr_context->swapchains[0].images.size(); i++) {
-	//	Uniform swapchain_uni;
-
-	//	swapchain_uni.data = xr_context->swapchains[0].images[i].textureView;
-	//	swapchain_uni.binding = 0;
-	//	swapchain_uniforms.push_back(swapchain_uni);
-	//}
-
-	//std::vector<Uniform*> uniforms = { &swapchain_uniforms[0] };
-
-	//// Generate bindgroups from the swapchain
-	//for (uint8_t i = 0; i < swapchain_uniforms.size(); i++) {
-	//	Uniform swapchain_uni;
-
-	//	std::vector<Uniform*> uniforms = { &swapchain_uniforms[i] };
-
-	//	swapchain_bind_groups.push_back(webgpu_context->create_bind_group(uniforms, render_voxelization_shader, 0));
-	//}
 	render_uniforms.width = webgpu_context->screen_width;
 	render_uniforms.height = webgpu_context->screen_height;
 
@@ -381,15 +369,16 @@ void VoxelizationRenderer::init_render_pipeline()
 void VoxelizationRenderer::clean()
 {
 	wgpuBindGroupRelease(render_voxelization_bind_group);
+	wgpuBindGroupRelease(color_buffer_bindgroup);
+	wgpuBindGroupRelease(render_lights_buffer_bindgroup);
 
 	voxel_vertexBuffer.destroy();
 	renderUniformsBuffer.destroy();
+	lightBuffer.destroy();
 
 	colorBuffer.destroy();
 	textureBuffer.destroy();
 	uniformsBuffer.destroy();
-
-	wgpuBindGroupRelease(voxelization_bindgroup);
 }
 
 void VoxelizationRenderer::update(float delta_time)
