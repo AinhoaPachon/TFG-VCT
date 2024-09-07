@@ -260,8 +260,8 @@ void VoxelizationRenderer::init_bindings_rasterizer(std::vector<MeshInstance3D*>
 	color_buffer_bindgroup = webgpu_context->create_bind_group(uniforms, voxelization_shader, 1);
 	//render_color_buffer_bindgroup = webgpu_context->create_bind_group(uniforms, render_voxelization_shader, 1);
 
-	light.position = glm::vec3(0.5);
-	light.color = glm::vec3(1.0, 0.0, 0.0);
+	light.position = glm::vec4(0.0, 0.0, 0.0, 1.0);
+	light.color = glm::vec4(1.0, 0.0, 0.0, 1.0);
 	light.intensity = 1.0f;
 
 	lightBuffer.binding = 0;

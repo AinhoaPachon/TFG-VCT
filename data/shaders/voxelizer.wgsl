@@ -33,8 +33,8 @@ struct VertexBuffer {
 };
 
 struct PointLight { 
-    position: vec3f,
-    color: vec3f,
+    position: vec4f,
+    color: vec4f,
     intensity: f32
 };
 
@@ -71,14 +71,21 @@ fn get_min_max(v1: vec4<f32>, v2: vec4<f32>, v3: vec4<f32>) -> array<f32, 6> {
     return min_max;
 }
 
-fn color_pixel(screen_coords: vec3<u32>, r: f32, g: f32, b: f32) {
+fn color_pixel(screen_coords: vec3<u32>, color: vec3f) {
   
     // aquí se guardará en la imagen
 
-    textureStore(texture3D, screen_coords, colorBuffer + vec4f(lightsBuffer.color, 0.0));
+    textureStore(texture3D, screen_coords, colorBuffer + vec4f(color, 0.0));
 }
 
-fn draw_triangle(triangleVertices: array<vec4f, 3>, verticesWorld: array<vec4f, 3>) 
+fn calculatePointLight(light: PointLight, worldPos: vec4f, normalFrag: vec3f) -> vec3f {
+    let direction = normalize(light.position.xyz - worldPos.xyz);
+    // let distanceToLight = length(light.position, worldPos.xyz);
+    let d = max(dot(normalize(normalFrag), direction), 0.0f);
+    return d * light.intensity * light.color.xyz;
+}
+
+fn draw_triangle(triangleVertices: array<vec4f, 3>, verticesWorld: array<vec4f, 3>, normal: vec3f) 
 {
     let min_max = get_min_max(triangleVertices[0], triangleVertices[1], triangleVertices[2]);
     let startX = u32(min_max[0]);
@@ -105,17 +112,12 @@ fn draw_triangle(triangleVertices: array<vec4f, 3>, verticesWorld: array<vec4f, 
                 let x = (bc.x * v1_world.x + bc.y * v2_world.x + bc.z * v3_world.x);// * 50.0 - 400.0;
                 let y = (bc.x * v1_world.y + bc.y * v2_world.y + bc.z * v3_world.y);// * 50.0 - 400.0;
                 let z = (bc.x * v1_world.z + bc.y * v2_world.z + bc.z * v3_world.z);// * 50.0 - 400.0;
+                
 
-                var R: f32;
-                var G: f32;
-                var B: f32;
-
-                R = 255.0;
-                G = 0.0;
-                B = 0.0;
+                let color = calculatePointLight(lightsBuffer, vec4f(x, y, z, 1.0), normal);
 
                 // Remember to multiply by 255 when not storing depth
-                color_pixel(vec3<u32>(u32(x), u32(y), u32(z)), R, G, B);
+                color_pixel(vec3<u32>(u32(x), u32(y), u32(z)), color);
             // }
         }
     }
@@ -169,13 +171,6 @@ fn select_dominant_axis(verticesPrevTriangle: array<vec4f, 3>) -> array<vec4f, 3
     return verticesFinalTriangle;
 }
 
-fn calculatePointLight(light: PointLight, worldPos: vec4f, normalFrag: vec3f) -> vec3f {
-    let direction = normalize(light.position - worldPos.xyz);
-    // let distanceToLight = length(light.position, worldPos.xyz);
-    let d = max(dot(normalize(normalFrag), direction), 0.0f);
-    return d * light.intensity * light.color;
-}
-
 @compute @workgroup_size(1, 1)
 fn compute(@builtin(global_invocation_id) global_id : vec3<u32>) {
     let index = global_id.x * 3u;
@@ -196,7 +191,7 @@ fn compute(@builtin(global_invocation_id) global_id : vec3<u32>) {
         verticesProjectedTriangle[i] = vec4f(temp, 1.0);
     }
 
-    draw_triangle(verticesProjectedTriangle, verticesTriangle); //ahora esto lo ignoraremos y pasaremos a non-conservative rasterization
+    draw_triangle(verticesProjectedTriangle, verticesTriangle, vertexBuffer.values[index + 0u].normal); //ahora esto lo ignoraremos y pasaremos a non-conservative rasterization
 
 
     // if (is_off_screen(v1) || is_off_screen(v2) || is_off_screen(v3)) {

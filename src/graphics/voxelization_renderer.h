@@ -39,10 +39,12 @@ class VoxelizationRenderer {
     } raster_data;
 
     struct PointLight {
-        glm::vec3   position;
+        glm::vec4   position;
+        glm::vec4   color;
+        float       intensity;
         float       padding0;
-        glm::vec3   color;
-        int         intensity;
+        float       padding1;
+        float       padding2;
     } light;
 
     std::vector<SurfaceRasterData*> voxelization_RasterData;
