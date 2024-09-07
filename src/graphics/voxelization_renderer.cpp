@@ -220,12 +220,17 @@ void VoxelizationRenderer::init_bindings_rasterizer(std::vector<MeshInstance3D*>
 			voxel_vertexBuffer.data = webgpu_context->create_buffer(voxel_vertexBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Storage, vertices.data(), "vertex buffer");
 
 			Material mat = surface->get_material();
-			glm::vec4 color = mat.color;
+
+			MaterialData* mat_data = new MaterialData;
+
+			mat_data->color = mat.color;
+			mat_data->roughness = mat.roughness;
+			mat_data->metalness = mat.metalness;
 
 			Uniform colorBuffer;
 			colorBuffer.binding = 1;
-			colorBuffer.buffer_size = sizeof(glm::vec4);
-			colorBuffer.data = webgpu_context->create_buffer(colorBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Storage, &color, "color buffer");
+			colorBuffer.buffer_size = sizeof(MaterialData);
+			colorBuffer.data = webgpu_context->create_buffer(colorBuffer.buffer_size, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Storage, mat_data, "color buffer");
 
 			uniforms = { &voxel_vertexBuffer, &colorBuffer, &uniformsBuffer };
 			
@@ -265,8 +270,8 @@ void VoxelizationRenderer::init_bindings_rasterizer(std::vector<MeshInstance3D*>
 	//render_color_buffer_bindgroup = webgpu_context->create_bind_group(uniforms, render_voxelization_shader, 1);
 
 	light.position = glm::vec4(0.0, 0.0, 0.0, 1.0);
-	light.color = glm::vec4(1.0, 0.0, 0.0, 1.0);
-	light.intensity = 1.0f;
+	light.color = glm::vec4(1.0, 1.0, 1.0, 1.0);
+	light.intensity = 10.0f;
 
 	lightBuffer.binding = 0;
 	lightBuffer.buffer_size = sizeof(PointLight);

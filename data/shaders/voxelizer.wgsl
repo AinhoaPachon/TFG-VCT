@@ -38,8 +38,15 @@ struct PointLight {
     intensity: f32
 };
 
+struct MaterialData { 
+    color: vec4f,
+    roughness: f32,
+    metalness: f32,
+    padding: vec2f
+}
+
 @group(0) @binding(0) var<storage, read_write> vertexBuffer : VertexBuffer;
-@group(0) @binding(1) var<storage, read_write> colorBuffer : vec4f;
+@group(0) @binding(1) var<storage, read_write> colorBuffer : MaterialData;
 @group(0) @binding(2) var<uniform> uniforms : UBO;
 // @group(1) @binding(0) var<storage, read_write> outputColorBuffer : ColorBuffer;
 @group(1) @binding(1) var texture3D: texture_storage_3d<rgba8unorm, write>;
@@ -71,18 +78,22 @@ fn get_min_max(v1: vec4<f32>, v2: vec4<f32>, v3: vec4<f32>) -> array<f32, 6> {
     return min_max;
 }
 
-fn color_pixel(screen_coords: vec3<u32>, color: vec3f) {
+fn color_pixel(screen_coords: vec3<u32>, color: vec4f) {
   
     // aquí se guardará en la imagen
 
-    textureStore(texture3D, screen_coords, colorBuffer + vec4f(color, 0.0));
+    let spec = colorBuffer.roughness * colorBuffer.color;
+    let diff = colorBuffer.metalness * colorBuffer.color;
+    let final_color = (diff + spec) * color;
+
+    textureStore(texture3D, screen_coords, final_color);
 }
 
-fn calculatePointLight(light: PointLight, worldPos: vec4f, normalFrag: vec3f) -> vec3f {
-    let direction = normalize(light.position.xyz - worldPos.xyz);
+fn calculatePointLight(light: PointLight, worldPos: vec4f, normalFrag: vec3f) -> vec4f {
+    let direction = normalize(screen_space(light.position.xyz) - worldPos.xyz);
     // let distanceToLight = length(light.position, worldPos.xyz);
     let d = max(dot(normalize(normalFrag), direction), 0.0f);
-    return d * light.intensity * light.color.xyz;
+    return d * light.intensity * light.color;
 }
 
 fn draw_triangle(triangleVertices: array<vec4f, 3>, verticesWorld: array<vec4f, 3>, normal: vec3f) 

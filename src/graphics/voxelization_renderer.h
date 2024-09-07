@@ -31,6 +31,13 @@ class VoxelizationRenderer {
         int height;
     } render_uniforms; // ideal sería quitarlo but now I can't be bothered with that tbh
 
+    struct MaterialData {
+        glm::vec4   color;
+        float       roughness;
+        float       metalness;
+        glm::vec2   padding;
+    };
+
     struct SurfaceRasterData {
         WGPUBindGroup  voxelization_bindgroup = nullptr;
         Uniform        voxel_vertexBuffer;
