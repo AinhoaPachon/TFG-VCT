@@ -18,9 +18,9 @@ class VoxelizationRenderer {
     int             number_triangles;
 
     struct UBO {
-        int grid_width = 256;
-        int grid_height = 256;
-        int grid_depth = 256;
+        uint32_t grid_width = 256;
+        uint32_t grid_height = 256;
+        uint32_t grid_depth = 256;
         int padding1;
         glm::mat4x4 viewProjectionMatrix;
         glm::mat4x4 model;
@@ -67,6 +67,7 @@ class VoxelizationRenderer {
     Uniform         lightBuffer;
 
     Texture         texture3D;
+    uint32_t        mipmap_count = 1;
 
     Pipeline		render_voxelization_pipeline;
     WGPUBindGroup   render_voxelization_bind_group = nullptr;
