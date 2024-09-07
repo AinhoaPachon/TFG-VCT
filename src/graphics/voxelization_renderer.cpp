@@ -16,6 +16,8 @@
 #include "framework/nodes/mesh_instance_3d.h"
 #include "framework/scene/parse_scene.h"
 
+#include <bit>
+
 VoxelizationRenderer::VoxelizationRenderer()
 {
 }
@@ -246,10 +248,12 @@ void VoxelizationRenderer::init_bindings_rasterizer(std::vector<MeshInstance3D*>
 		texture_values[i] = 0;
 	}
 
+	mipmap_count = std::bit_width(std::max(voxelizer_uniforms.grid_width, voxelizer_uniforms.grid_height));
+
 	texture3D.create(WGPUTextureDimension_3D, 
 		WGPUTextureFormat_RGBA8Unorm, 
 		{ uint32_t(voxelizer_uniforms.grid_width), uint32_t(voxelizer_uniforms.grid_height), uint32_t(voxelizer_uniforms.grid_depth) }, 
-		static_cast<WGPUTextureUsage>(WGPUTextureUsage_TextureBinding | WGPUTextureUsage_StorageBinding | WGPUTextureUsage_CopyDst), 1, 1, nullptr);
+		static_cast<WGPUTextureUsage>(WGPUTextureUsage_TextureBinding | WGPUTextureUsage_StorageBinding | WGPUTextureUsage_CopyDst), mipmap_count, 1, nullptr);
 
 	webgpu_context->upload_texture(texture3D.get_texture(), WGPUTextureDimension_3D, texture3D.get_size(), 0, WGPUTextureFormat_RGBA8Unorm, texture_values.data(), {0, 0, 0});
 
@@ -317,6 +321,8 @@ void VoxelizationRenderer::on_compute()
 	wgpuCommandBufferRelease(commands);
 	wgpuComputePassEncoderRelease(computePass);
 	wgpuCommandEncoderRelease(encod);
+
+	webgpu_context->create_texture_mipmaps(texture3D.get_texture(), { uint32_t(voxelizer_uniforms.grid_width), uint32_t(voxelizer_uniforms.grid_height), uint32_t(voxelizer_uniforms.grid_depth) }, mipmap_count, WGPUTextureViewDimension_3D, WGPUTextureFormat_RGBA8Unorm);
 	
 	RenderdocCapture::end_capture_frame();
 }
