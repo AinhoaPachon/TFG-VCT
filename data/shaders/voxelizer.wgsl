@@ -1,5 +1,10 @@
 #include mesh_includes.wgsl
 
+const DIST_FACTOR = 1.1f; /* Distance is multiplied by this when calculating attenuation. */
+const CONSTANT = 1;
+const LINEAR = 0;
+const QUADRATIC = 1;
+
 struct ColorBuffer {
   values: array<atomic<u32>>,
 };
@@ -89,11 +94,22 @@ fn color_pixel(screen_coords: vec3<u32>, color: vec4f) {
     textureStore(texture3D, screen_coords, final_color);
 }
 
+
+
+// Returns an attenuation factor given a distance.
+fn attenuate(dist: f32) -> f32 { 
+    let distance = dist * DIST_FACTOR; 
+    return 1.0f / (CONSTANT + LINEAR * dist + QUADRATIC * dist * dist);
+}
+
 fn calculatePointLight(light: PointLight, worldPos: vec4f, normalFrag: vec3f) -> vec4f {
     let direction = normalize(screen_space(light.position.xyz) - worldPos.xyz);
-    // let distanceToLight = length(light.position, worldPos.xyz);
+    let distanceToLight = sqrt(pow(light.position.x - worldPos.x, 2) +
+                            pow(light.position.y - worldPos.y, 2) +
+                            pow(light.position.z - worldPos.z, 2));
+    let attenuation = attenuate(distanceToLight / 256.0f);
     let d = max(dot(normalize(normalFrag), direction), 0.0f);
-    return d * light.intensity * light.color;
+    return vec4f(d * light.intensity * light.color.xyz * attenuation, light.color.w);
 }
 
 fn draw_triangle(triangleVertices: array<vec4f, 3>, verticesWorld: array<vec4f, 3>, normal: vec3f) 

@@ -271,7 +271,7 @@ void VoxelizationRenderer::init_bindings_rasterizer(std::vector<MeshInstance3D*>
 
 	light.position = glm::vec4(0.0, 0.0, 0.0, 1.0);
 	light.color = glm::vec4(1.0, 1.0, 1.0, 1.0);
-	light.intensity = 10.0f;
+	light.intensity = 1.0f;
 
 	lightBuffer.binding = 0;
 	lightBuffer.buffer_size = sizeof(PointLight);
